@@ -8,8 +8,55 @@ const DEFAULT_CHECK_INTERVAL_HOURS: u64 = 1;
 const LEGACY_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 24;
 const LEGACY_PREVIOUS_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 6;
 const PENDING_UPDATE_NOTES_FILE: &str = "pending_update_notes.json";
-const CHANGELOG_MARKDOWN_EN: &str = "# AI CodePass v1.0.0\n\n- Standalone management tool for CodeBuddy, Qoder, and Trae.\n- Multi-account switching, daily auto check-in, quota monitoring, and instance manager.";
-const CHANGELOG_MARKDOWN_ZH: &str = "# AI CodePass v1.0.0\n\n- CodeBuddy、Qoder 与 Trae 专属独立管理工具。\n- 支持多账号一键切号、每日错峰自动打卡签到、额度用量监控与多开实例管理。";
+const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.0] - 2026-09-26
+
+### Highlights
+- Specialized standalone management tool for CodeBuddy, Qoder, and Trae.
+- Qoder Global daily 100 Credits check-in support with SASH protocol & hardware device headers.
+- Real-time quota & plan monitoring with exact reset and expiration countdown.
+
+### Added
+- CodeBuddy / Workbuddy multi-account switching and credential extraction
+- Qoder CN & Global multi-account management
+- Qoder Global daily 100 Credits claim with SASH protocol
+- Trae & TRAE SOLO multi-account management and auto check-in
+- Real-time quota monitoring and reset countdown
+- Multi-instance environment isolation
+- System tray integration and instant switching
+
+### Changed
+- Refactored lightweight architecture with over 80% faster startup
+- Modern minimalist dual-column UI with dark/light theme support
+
+### Fixed
+- Fixed Qoder Global campaign recognition and credit query
+- Fixed desktop process sync during account switching
+"#;
+
+const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.0] - 2026-09-26
+
+### 重要更新
+- 独立聚焦三大主流 AI 编程助手：CodeBuddy（腾讯混元）、Qoder（阿里通义灵码）、Trae（字节跳动）。
+- Qoder 国际版每日签到与配额全适配：深度适配 SASH 协议与设备指纹，每天 10:00 自动领取 100 Credits 奖励。
+- 智能配额监控与到期倒计时：支持套餐额度、赠送额度、有效期精准计算与实时可视化。
+
+### 新增
+- CodeBuddy / Workbuddy 腾讯混元多账号管理与一键切换
+- Qoder 阿里通义灵码国内版与国际版多账号管理
+- Qoder 国际版每日签到领取 100 Credits（SASH 协议与真实设备头适配）
+- Trae / TRAE SOLO 字节跳动多账号及自动签到领额度
+- 实时配额用量监控与到期倒计时提醒
+- 多开实例环境隔离与一键启动
+- 系统托盘后台驻留与快速切号菜单
+
+### 变更
+- 全新架构解耦，移除冗余工具，启动速度与内存占用大幅优化
+- 现代化极简双栏设计，沉浸式深浅色主题适配
+
+### 修复
+- 修复 Qoder 国际版每日签到活动识别与额度显示异常
+- 修复多账号切换时的桌面端进程状态同步问题
+"#;
 
 
 static UPDATE_SETTINGS_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -139,7 +186,7 @@ pub fn should_check_for_updates(settings: &UpdateSettings) -> bool {
 /// Get data directory for storing update settings
 fn get_data_dir() -> Result<std::path::PathBuf, String> {
     dirs::data_local_dir()
-        .map(|d| d.join("cockpit-tools"))
+        .map(|d| d.join("ai-codepass"))
         .ok_or_else(|| "Failed to get data directory".to_string())
 }
 

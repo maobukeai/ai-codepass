@@ -672,7 +672,7 @@ export function SettingsPageView(props: SettingsPageViewProps) {
                     <button
                       type="button"
                       className="btn btn-sm btn-ghost"
-                      onClick={() => openLink('https://github.com/aicodepass/ai-codepass/releases')}
+                      onClick={() => openLink('https://github.com/maobukeai/ai-codepass/releases')}
                       style={{ alignSelf: 'flex-start', height: '24px', fontSize: '11px', padding: '0 8px', marginTop: '2px' }}
                     >
                       <ExternalLink size={11} /> 前往 Releases 网页
@@ -733,7 +733,7 @@ export function SettingsPageView(props: SettingsPageViewProps) {
                   <button
                     type="button"
                     className="btn btn-sm btn-ghost"
-                    onClick={() => openLink('https://github.com/aicodepass/ai-codepass')}
+                    onClick={() => openLink('https://github.com/maobukeai/ai-codepass')}
                     style={{
                       width: '100%',
                       height: '30px',
@@ -753,7 +753,7 @@ export function SettingsPageView(props: SettingsPageViewProps) {
                   <button
                     type="button"
                     className="btn btn-sm btn-ghost"
-                    onClick={() => openLink('https://github.com/aicodepass/ai-codepass/issues')}
+                    onClick={() => openLink('https://github.com/maobukeai/ai-codepass/issues')}
                     style={{
                       width: '100%',
                       height: '30px',

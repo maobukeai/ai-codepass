@@ -1,19 +1,21 @@
 const ZH_SECTION_HEADER = '## 更新日志（中文）';
 const EN_SECTION_HEADER = '## Changelog (English)';
 const GITHUB_RELEASE_TAG_BASE_URL =
-  'https://github.com/jlcodes99/cockpit-tools/releases/tag/v';
+  'https://github.com/maobukeai/ai-codepass/releases/tag/v';
 const RELEASE_HIGHLIGHTS: Record<string, { zh: string; en: string }> = {
-  '1.3.1': {
+  '1.0.0': {
     zh: `### 重要更新
 
-- **Codex API 生图兼容恢复**：修复第三方 API 服务与 API Key provider 无法使用 Codex 内置生图的问题；提供 \`gpt-image-2\` 的供应商及多开实例现在会自动写入所需配置。
-- **Codex SSH 账号同步**：支持主机管理、连接测试、同步 \`auth.json\` / \`config.toml\`、远端哈希校验、切号后自动同步，并在可能时重载远端 Codex app-server/daemon。
-- **Codex 切号支持同步 Hermes 鉴权**：开启后，OAuth 账号切号会同步写入 \`~/.hermes/auth.json\`；API Key 账号自动跳过，同步失败不会阻断切号。`,
+- **三大 AI 编程助手专精管理**：独立解耦并精细化支持 CodeBuddy（腾讯混元）、Qoder（阿里通义灵码）、Trae（字节跳动），去除多余冗余 IDE。
+- **Qoder 国际版每日签到全适配**：深度适配 SASH 协议与设备指纹，支持每日 10:00 自动打卡领取 100 Credits，支持国内版与国际版多账号并存。
+- **智能额度监测与过期倒计时**：清晰展示各账号套餐状态、剩余请求数、Credits 余额及精确到期的重置倒计时。
+- **环境隔离与多开支持**：支持为不同账号配置独立工作目录与环境，支持托盘快速切号与后台自动签到。`,
     en: `### Highlights
 
-- **Codex API image generation compatibility restored**: third-party API Service and API Key providers can use built-in Codex image generation again; providers exposing \`gpt-image-2\` and managed instances now receive the required configuration.
-- **Codex account sync over SSH**: manage hosts, test connections, sync \`auth.json\` / \`config.toml\`, verify remote hashes, sync after account switches, and reload the remote Codex app-server/daemon when possible.
-- **Optional Hermes auth sync on Codex switch**: OAuth account switches can update \`~/.hermes/auth.json\`; API Key accounts are skipped and sync failures do not block switching.`,
+- **Specialized Management for 3 Major AI Assistants**: Standalone tool tailored for CodeBuddy (Tencent Hunyuan), Qoder (Alibaba Tongyi), and Trae (ByteDance).
+- **Qoder Global Daily Check-in & Credits**: Full support for SASH protocol and device fingerprints, claiming 100 daily Credits seamlessly.
+- **Smart Quota Monitoring & Expiration Countdown**: Real-time display of plan status, remaining requests, credits, and exact reset countdowns.
+- **Multi-Instance Isolation & Tray Switch**: Isolated runtimes for multiple accounts, instant tray switching, and background auto check-in.`,
   },
 };
 
@@ -134,7 +136,7 @@ export function resolveUpdaterDownloadUrl(
 
   const safeVersion = version.trim();
   if (!safeVersion) {
-    return 'https://github.com/jlcodes99/cockpit-tools/releases/latest';
+    return 'https://github.com/maobukeai/ai-codepass/releases/latest';
   }
   return `${GITHUB_RELEASE_TAG_BASE_URL}${encodeURIComponent(safeVersion)}`;
 }
