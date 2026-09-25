@@ -1,0 +1,122 @@
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 1100px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-float {
+    position: static;
+  }
+
+  .dashboard-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .app-container-side-nav-classic {
+    --side-nav-classic-width-expanded: 168px;
+    --side-nav-classic-main-gap: 12px;
+  }
+
+  .main-wrapper {
+    padding-top: 18px;
+    padding-inline-end: 14px;
+    gap: 12px;
+  }
+
+  .page-heading h1 {
+    font-size: 18px;
+  }
+
+  .accounts-grid,
+  .ghcp-accounts-grid,
+  .tag-group-grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 8px;
+  }
+
+  .app-header,
+  .main-header {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .nav-pills {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-container-side-nav-classic {
+    --side-nav-classic-width-expanded: 156px;
+    --side-nav-classic-main-gap: 10px;
+  }
+
+  .dashboard-stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+
+@media (max-width: 680px) {
+  .app-container-side-nav-classic {
+    --side-nav-classic-width-expanded: 146px;
+    --side-nav-classic-main-gap: 8px;
+  }
+
+  .main-wrapper {
+    padding-inline-end: 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .accounts-grid,
+  .ghcp-accounts-grid,
+  .tag-group-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-container {
+    padding: 18px;
+  }
+
+  .page-heading h1 {
+    font-size: 20px;
+  }
+
+  .dashboard-stat-row {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .quota-grid {
+    min-width: 0;
+  }
+}
+

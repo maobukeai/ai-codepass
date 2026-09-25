@@ -1,0 +1,69 @@
+# Logs
+logs
+*.log
+*.dmg
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+.gemini
+.codegraph/
+# Editor directories and files
+.vscode/*
+.planning
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+locale-check-report.md
+
+docs/platform-integration-guide.md
+docs/plugin-architecture-design.md
+
+# Runtime caches
+src-tauri/arms_cache/
+arms.biz.trace.*
+sidecars/cockpit-cliproxy/bin/
+sidecars/cockpit-cliproxy/cockpit-cliproxy
+src-tauri/resources/electron/*
+!src-tauri/resources/electron/.gitkeep
+
+# Swift native menu build artifacts
+src-tauri/native/macos-native-menu/.build/
+.tmp/
+
+# Rust
+target/
+**/*.rs.bk
+docs/plugin-architecture-proposal.md
+.aitasks
+.qoder/
+.mission/
+
+# Archived scratch & dead code (kept for reference, not part of the build)
+archive/
+release_artifacts/
+release_notes.md
+
+# Credentials & local accounts isolation
+*accounts.json*
+*.key
+*.pem
+*.secret
+.ai_codepass/
+.ai_codepass_dev/
+.antigravity_cockpit/
+
+

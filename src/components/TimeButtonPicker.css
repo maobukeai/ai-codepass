@@ -1,0 +1,85 @@
+.time-button-picker {
+  position: relative;
+  display: inline-flex;
+}
+
+.time-button-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.time-button-picker-trigger:hover:not(:disabled) {
+  border-color: var(--border-hover, var(--border-light));
+  background: var(--bg-secondary);
+}
+
+.time-button-picker-trigger:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.time-button-picker-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.time-button-picker-panel {
+  position: fixed;
+  z-index: 2147483000;
+  width: 232px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-surface, var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: var(--shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.12));
+}
+
+.time-button-picker-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.time-button-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+
+.time-button-picker-cell {
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.time-button-picker-cell:hover {
+  background: var(--bg-hover);
+}
+
+.time-button-picker-cell.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
