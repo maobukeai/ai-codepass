@@ -54,3 +54,6 @@ docs/plugin-architecture-proposal.md
 
 # Archived scratch & dead code (kept for reference, not part of the build)
 archive/
+release_artifacts/
+release_notes.md
+
