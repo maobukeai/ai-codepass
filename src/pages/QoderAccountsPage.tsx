@@ -48,6 +48,7 @@ import {
   PlatformOverviewTabsHeader,
 } from '../components/platform/PlatformOverviewTabsHeader';
 import { QoderInstancesContent } from './QoderInstancesPage';
+import { QoderCheckinModal } from '../components/codebuddy-suite/QoderCheckinModal';
 import { useQoderAccountStore } from '../stores/useQoderAccountStore';
 import { useQoderCnAccountStore } from '../stores/useQoderCnAccountStore';
 import { useQwenworkAccountStore } from '../stores/useQwenworkAccountStore';
@@ -280,6 +281,7 @@ export function QoderAccountsPage({ platformId = 'qoder' }: QoderAccountsPagePro
   const store = isQwenwork ? qwenworkStore : isCn ? cnStore : globalStore;
   const qoderService = isQwenwork ? qwenworkService : isCn ? qoderCnService : qoderGlobalService;
   const [checkingIn, setCheckingIn] = useState(false);
+  const [showCheckinModal, setShowCheckinModal] = useState(false);
 
   const initialFilterPersistenceEnabled =
     readAccountsOverviewFilterPersistenceEnabled(filterPersistenceScope);
@@ -2198,7 +2200,10 @@ export function QoderAccountsPage({ platformId = 'qoder' }: QoderAccountsPagePro
 
           {message && (
             <div className={`message-bar ${message.tone === 'error' ? 'error' : 'success'}`}>
-              {message.text}
+              <div className="message-bar-content">
+                {message.tone === 'error' ? <CircleAlert size={16} /> : <Check size={16} />}
+                <span>{message.text}</span>
+              </div>
               <button onClick={() => setMessage(null)} aria-label={t('common.close', '关闭')}>
                 <X size={14} />
               </button>
@@ -2334,12 +2339,11 @@ export function QoderAccountsPage({ platformId = 'qoder' }: QoderAccountsPagePro
             <div className="toolbar-right">
               <button
                 className="btn btn-secondary"
-                onClick={() => void handleQoderCheckin()}
-                disabled={checkingIn}
-                title={`${platformDisplayName}每日签到（领取 +100 Credits）`}
+                onClick={() => setShowCheckinModal(true)}
+                title={`${platformDisplayName}每日签到面板（查看状态与逐个领取）`}
               >
-                <CalendarCheck size={14} className={checkingIn ? 'loading-spinner' : ''} />
-                <span>{checkingIn ? '签到中...' : '每日签到'}</span>
+                <CalendarCheck size={14} />
+                <span>每日签到</span>
               </button>
               <button
                 className="btn btn-primary icon-only"
@@ -2678,6 +2682,17 @@ export function QoderAccountsPage({ platformId = 'qoder' }: QoderAccountsPagePro
         onOpenSavedDirectory={exportModal.openSavedDirectory}
         onCopySavedPath={exportModal.copySavedPath}
       />
+
+      {showCheckinModal && (
+        <QoderCheckinModal
+          accounts={accounts}
+          platformId={platformId}
+          onClose={() => setShowCheckinModal(false)}
+          onCheckinComplete={() => {
+            void store.fetchAccounts();
+          }}
+        />
+      )}
     </div>
   );
 }
