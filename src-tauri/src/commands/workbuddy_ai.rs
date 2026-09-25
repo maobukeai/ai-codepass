@@ -23,8 +23,13 @@ pub fn delete_workbuddy_ai_accounts(account_ids: Vec<String>) -> Result<(), Stri
 
 #[tauri::command]
 pub fn import_workbuddy_ai_from_json(json_content: String) -> Result<Vec<WorkbuddyAccount>, String> {
-    let accounts: Vec<WorkbuddyAccount> = serde_json::from_str(&json_content)
-        .map_err(|e| format!("解析导入的 WorkBuddyAI 账号 JSON 失败: {}", e))?;
+    let accounts: Vec<WorkbuddyAccount> = match serde_json::from_str::<Vec<WorkbuddyAccount>>(&json_content) {
+        Ok(list) => list,
+        Err(_) => match serde_json::from_str::<WorkbuddyAccount>(&json_content) {
+            Ok(single) => vec![single],
+            Err(e) => return Err(format!("解析导入的 WorkBuddyAI 账号 JSON 失败: {}", e)),
+        },
+    };
     
     let mut imported = Vec::new();
     for acc in accounts {
@@ -93,9 +98,15 @@ pub async fn import_workbuddy_ai_from_local(app: AppHandle) -> Result<Vec<Workbu
 }
 
 #[tauri::command]
-pub fn export_workbuddy_ai_accounts() -> Result<String, String> {
+pub fn export_workbuddy_ai_accounts(account_ids: Option<Vec<String>>) -> Result<String, String> {
     let accounts = workbuddy_ai_account::list_accounts();
-    serde_json::to_string_pretty(&accounts)
+    let filtered: Vec<WorkbuddyAccount> = match account_ids {
+        Some(ids) if !ids.is_empty() => {
+            accounts.into_iter().filter(|a| ids.contains(&a.id)).collect()
+        }
+        _ => accounts,
+    };
+    serde_json::to_string_pretty(&filtered)
         .map_err(|e| format!("导出 WorkBuddyAI 账号失败: {}", e))
 }
 

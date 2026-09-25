@@ -49,8 +49,26 @@ export function dispatchWebdavSyncStateChanged() {
   window.dispatchEvent(new Event(WEBDAV_SYNC_STATE_CHANGED_EVENT));
 }
 
+export const DEFAULT_WEBDAV_SETTINGS: WebdavSyncSettings = {
+  enabled: false,
+  url: 'https://dav.jianguoyun.com/dav/',
+  username: '',
+  has_password: false,
+  remote_dir: 'cockpit-tools',
+  last_upload_at: null,
+  last_upload_file_name: null,
+  last_download_at: null,
+  last_download_file_name: null,
+  retention_days: 15,
+};
+
 export async function getWebdavSyncSettings(): Promise<WebdavSyncSettings> {
-  return invoke<WebdavSyncSettings>('get_webdav_sync_settings');
+  try {
+    const res = await invoke<WebdavSyncSettings>('get_webdav_sync_settings');
+    return res || DEFAULT_WEBDAV_SETTINGS;
+  } catch {
+    return DEFAULT_WEBDAV_SETTINGS;
+  }
 }
 
 export async function saveWebdavSyncSettings(

@@ -8,6 +8,8 @@ import {
   importAllAccountsFromTransferJson,
 } from './accountTransferService';
 import { ALL_PLATFORM_IDS, PlatformId } from '../types/platform';
+import { getTraeAccountPlatformId } from '../types/trae';
+import { emitCurrentAccountChanged } from '../utils/accountSyncEvents';
 import {
   CURRENT_ACCOUNT_REFRESH_STORAGE_KEY,
   CurrentAccountRefreshMinutesMap,
@@ -32,6 +34,7 @@ const INSTANCE_PLATFORMS = [
   'codebuddy_cn',
   'qoder',
   'qoder_cn',
+  'qwenwork',
   'trae',
   'workbuddy',
 ] as const;
@@ -115,12 +118,27 @@ export interface DataTransferConfigBundle {
   user_config: ExportedUserConfig;
   instance_stores?: Partial<Record<InstancePlatform, ExportedInstanceStore>>;
   current_account_refresh_minutes?: CurrentAccountRefreshMinutesMap;
+  current_account_refresh_overrides?: unknown;
   platform_layout_config?: unknown;
   platform_layout_custom_icons?: unknown;
   compact_group_order?: unknown;
   compact_group_colors?: unknown;
   compact_hidden_groups?: unknown;
   app_language?: string;
+
+  // Auto check-in configs, logs, and dates
+  auto_checkin_configs?: Record<string, unknown>;
+  auto_checkin_logs?: Record<string, unknown>;
+  checkin_dates_records?: Record<string, unknown>;
+
+  // Current selected accounts per platform
+  current_account_refs?: Partial<Record<PlatformId, DataTransferAccountRef | null>>;
+
+  // UI preferences, side navigation & overview filters
+  ui_preferences?: Record<string, unknown>;
+  overview_filters?: Record<string, unknown>;
+  user_memory?: unknown;
+
   // Legacy compatibility fields
   group_settings?: unknown;
   account_groups?: unknown;
@@ -176,10 +194,22 @@ const ACCOUNT_LOADERS: Record<PlatformId, AccountLoader> = {
   qoder: async () => (await qoderService.listQoderAccounts()) as unknown as TransferAccountRecord[],
   qoder_cn: async () => (await qoderCnService.listQoderAccounts()) as unknown as TransferAccountRecord[],
   qwenwork: async () => (await qwenworkService.listQoderAccounts()) as unknown as TransferAccountRecord[],
-  trae: async () => (await traeService.listTraeAccounts()) as unknown as TransferAccountRecord[],
-  trae_solo: async () => (await traeService.listTraeAccounts()) as unknown as TransferAccountRecord[],
-  trae_cn: async () => (await traeService.listTraeAccounts()) as unknown as TransferAccountRecord[],
-  trae_solo_cn: async () => (await traeService.listTraeAccounts()) as unknown as TransferAccountRecord[],
+  trae: async () =>
+    (await traeService.listTraeAccounts()).filter(
+      (acc) => getTraeAccountPlatformId(acc) === 'trae',
+    ) as unknown as TransferAccountRecord[],
+  trae_solo: async () =>
+    (await traeService.listTraeAccounts()).filter(
+      (acc) => getTraeAccountPlatformId(acc) === 'trae_solo',
+    ) as unknown as TransferAccountRecord[],
+  trae_cn: async () =>
+    (await traeService.listTraeAccounts()).filter(
+      (acc) => getTraeAccountPlatformId(acc) === 'trae_cn',
+    ) as unknown as TransferAccountRecord[],
+  trae_solo_cn: async () =>
+    (await traeService.listTraeAccounts()).filter(
+      (acc) => getTraeAccountPlatformId(acc) === 'trae_solo_cn',
+    ) as unknown as TransferAccountRecord[],
   workbuddy: async () => (await workbuddyService.listWorkbuddyAccounts()) as unknown as TransferAccountRecord[],
   workbuddy_ai: async () => (await workbuddyAiService.listWorkbuddyAiAccounts()) as unknown as TransferAccountRecord[],
 };
@@ -311,6 +341,7 @@ function buildAccountRef(platform: PlatformId, account: TransferAccountRecord): 
   switch (platform) {
     case 'qoder':
     case 'qoder_cn':
+    case 'qwenwork':
     case 'trae':
     case 'trae_solo':
     case 'trae_cn':
@@ -321,6 +352,7 @@ function buildAccountRef(platform: PlatformId, account: TransferAccountRecord): 
     case 'codebuddy':
     case 'codebuddy_cn':
     case 'workbuddy':
+    case 'workbuddy_ai':
       ref.email = normalizeString(account.email) ?? undefined;
       ref.uid = normalizeString(account.uid) ?? undefined;
       ref.domain = normalizeString(account.domain) ?? undefined;
@@ -344,6 +376,7 @@ function scoreAccountRef(ref: DataTransferAccountRef, account: TransferAccountRe
   switch (ref.platform) {
     case 'qoder':
     case 'qoder_cn':
+    case 'qwenwork':
     case 'trae':
     case 'trae_solo':
     case 'trae_cn':
@@ -354,6 +387,7 @@ function scoreAccountRef(ref: DataTransferAccountRef, account: TransferAccountRe
     case 'codebuddy':
     case 'codebuddy_cn':
     case 'workbuddy':
+    case 'workbuddy_ai':
       addStringScore(ref.uid, account.uid, 24);
       addStringScore(ref.email, account.email, 10);
       addStringScore(ref.domain, account.domain, 4);
@@ -507,6 +541,7 @@ async function exportConfigBundle(registry: AccountRegistry): Promise<DataTransf
   const [
     rawUserConfig,
     instanceStoreEntries,
+    userMemoryData,
   ] = await Promise.all([
     invoke<RawUserConfig>('data_transfer_get_user_config'),
     (async () => {
@@ -521,7 +556,88 @@ async function exportConfigBundle(registry: AccountRegistry): Promise<DataTransf
       }
       return entries;
     })(),
+    invoke('load_user_memory').catch(() => null),
   ]);
+
+  // 1. Auto check-in configs
+  const autoCheckinConfigs: Record<string, unknown> = {};
+  const autoCheckinKeys = [
+    'agtools.qoder.auto_checkin_config',
+    'agtools.trae.auto_checkin_config',
+    'agtools.workbuddy.auto_checkin_config',
+  ];
+  for (const k of autoCheckinKeys) {
+    const val = safeGetLocalStorageItem(k);
+    if (val !== undefined) autoCheckinConfigs[k] = val;
+  }
+
+  // 2. Auto check-in logs
+  const autoCheckinLogs: Record<string, unknown> = {};
+  const autoCheckinLogsKeys = [
+    'agtools.qoder.auto_checkin_logs',
+    'agtools.trae.auto_checkin_logs',
+    'agtools.workbuddy.auto_checkin_logs',
+  ];
+  for (const k of autoCheckinLogsKeys) {
+    const val = safeGetLocalStorageItem(k);
+    if (val !== undefined) autoCheckinLogs[k] = val;
+  }
+
+  // 3. Historical check-in dates
+  const checkinDates: Record<string, unknown> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.includes('.checkin_dates.')) {
+      const val = safeGetLocalStorageItem(k);
+      if (val !== undefined) checkinDates[k] = val;
+    }
+  }
+
+  // 4. Current selected accounts
+  const currentAccountRefs: Partial<Record<PlatformId, DataTransferAccountRef | null>> = {};
+  for (const platform of ALL_PLATFORM_IDS) {
+    const primaryKey = `agtools.${platform}.current_account_id`;
+    const aliasKey = platform === 'codebuddy_cn' ? 'agtools.codebuddycn.current_account_id' : null;
+    const currentId = localStorage.getItem(primaryKey) || (aliasKey ? localStorage.getItem(aliasKey) : null);
+    if (currentId) {
+      const account = registry.byId[platform]?.get(currentId);
+      if (account) {
+        currentAccountRefs[platform] = buildAccountRef(platform, account);
+      } else {
+        currentAccountRefs[platform] = { platform, userId: currentId };
+      }
+    }
+  }
+
+  // 5. Overview filters
+  const overviewFilters: Record<string, unknown> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('agtools.accounts_overview_filter.')) {
+      const val = safeGetLocalStorageItem(k);
+      if (val !== undefined) overviewFilters[k] = val;
+    }
+  }
+
+  // 6. UI Preferences
+  const uiPreferences: Record<string, unknown> = {
+    privacy_mode_enabled: localStorage.getItem('privacy_mode_enabled') ?? undefined,
+    dashboard_view_mode: localStorage.getItem('dashboard_view_mode') ?? undefined,
+    side_nav_layout: safeGetLocalStorageItem('agtools.side_nav.layout.v1'),
+    floating_card_platform:
+      localStorage.getItem('agtools.floating_card.platform') ||
+      localStorage.getItem('agtools.floating_card_platform') ||
+      undefined,
+    antigravity_seamless_switch_unlock:
+      localStorage.getItem('agtools.antigravity_seamless_switch_unlock') ?? undefined,
+  };
+  for (const platform of ALL_PLATFORM_IDS) {
+    const flowNoticeKey = `agtools.${platform}.flow_notice_collapsed`;
+    const val = localStorage.getItem(flowNoticeKey);
+    if (val !== null) {
+      uiPreferences[flowNoticeKey] = val;
+    }
+  }
 
   return {
     user_config: rawUserConfig,
@@ -529,12 +645,20 @@ async function exportConfigBundle(registry: AccountRegistry): Promise<DataTransf
       Record<InstancePlatform, ExportedInstanceStore>
     >,
     current_account_refresh_minutes: loadCurrentAccountRefreshMinutesMap(),
+    current_account_refresh_overrides: safeGetLocalStorageItem('agtools.current_account_refresh_overrides.v1'),
     platform_layout_config: safeGetLocalStorageItem('agtools.platform_layout.v1'),
     platform_layout_custom_icons: safeGetLocalStorageItem('agtools.platform_layout.custom_icons.v1'),
     compact_group_order: safeGetLocalStorageItem('compactGroupOrder'),
     compact_group_colors: safeGetLocalStorageItem('compactGroupColors'),
     compact_hidden_groups: safeGetLocalStorageItem('compactHiddenGroups'),
     app_language: localStorage.getItem('app-language') ?? undefined,
+    auto_checkin_configs: autoCheckinConfigs,
+    auto_checkin_logs: autoCheckinLogs,
+    checkin_dates_records: checkinDates,
+    current_account_refs: currentAccountRefs,
+    overview_filters: overviewFilters,
+    ui_preferences: uiPreferences,
+    user_memory: userMemoryData,
   };
 }
 
@@ -575,7 +699,118 @@ async function importConfigBundle(bundle: DataTransferConfigBundle): Promise<Dat
   if (bundle.current_account_refresh_minutes) {
     saveCurrentAccountRefreshMinutesMap(bundle.current_account_refresh_minutes);
   }
+  if (bundle.current_account_refresh_overrides !== undefined) {
+    safeSetLocalStorageItem(
+      'agtools.current_account_refresh_overrides.v1',
+      bundle.current_account_refresh_overrides,
+    );
+  }
+
+  if (bundle.auto_checkin_configs) {
+    for (const [key, value] of Object.entries(bundle.auto_checkin_configs)) {
+      safeSetLocalStorageItem(key, value);
+    }
+    window.dispatchEvent(new Event('qoder-auto-checkin-config-changed'));
+    window.dispatchEvent(new Event('trae-auto-checkin-config-changed'));
+    window.dispatchEvent(new Event('workbuddy-auto-checkin-config-changed'));
+  }
+
+  if (bundle.auto_checkin_logs) {
+    for (const [key, value] of Object.entries(bundle.auto_checkin_logs)) {
+      safeSetLocalStorageItem(key, value);
+    }
+    window.dispatchEvent(new Event('qoder-auto-checkin-logs-changed'));
+    window.dispatchEvent(new Event('trae-auto-checkin-logs-changed'));
+    window.dispatchEvent(new Event('workbuddy-auto-checkin-logs-changed'));
+  }
+
+  if (bundle.checkin_dates_records) {
+    for (const [key, value] of Object.entries(bundle.checkin_dates_records)) {
+      safeSetLocalStorageItem(key, value);
+    }
+  }
+
+  if (bundle.current_account_refs) {
+    for (const platform of ALL_PLATFORM_IDS) {
+      const ref = bundle.current_account_refs[platform];
+      if (!ref) continue;
+      const resolvedId = resolveAccountRef(ref, registry) || ref.userId || null;
+      if (resolvedId) {
+        const primaryKey = `agtools.${platform}.current_account_id`;
+        safeSetLocalStorageItem(primaryKey, resolvedId);
+        if (platform === 'codebuddy_cn') {
+          safeSetLocalStorageItem('agtools.codebuddycn.current_account_id', resolvedId);
+        }
+        try {
+          await emitCurrentAccountChanged({ platformId: platform, accountId: resolvedId });
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
+
+  if (bundle.overview_filters) {
+    for (const [key, value] of Object.entries(bundle.overview_filters)) {
+      safeSetLocalStorageItem(key, value);
+    }
+    window.dispatchEvent(new Event('agtools.accounts_overview_filter_persistence_changed'));
+  }
+
+  if (bundle.ui_preferences) {
+    const prefs = bundle.ui_preferences;
+    if (prefs.privacy_mode_enabled !== undefined) {
+      safeSetLocalStorageItem('privacy_mode_enabled', prefs.privacy_mode_enabled);
+    }
+    if (prefs.dashboard_view_mode !== undefined) {
+      safeSetLocalStorageItem('dashboard_view_mode', prefs.dashboard_view_mode);
+    }
+    if (prefs.side_nav_layout !== undefined) {
+      safeSetLocalStorageItem('agtools.side_nav.layout.v1', prefs.side_nav_layout);
+    }
+    if (prefs.floating_card_platform !== undefined) {
+      safeSetLocalStorageItem('agtools.floating_card.platform', prefs.floating_card_platform);
+    }
+    if (prefs.antigravity_seamless_switch_unlock !== undefined) {
+      safeSetLocalStorageItem(
+        'agtools.antigravity_seamless_switch_unlock',
+        prefs.antigravity_seamless_switch_unlock,
+      );
+    }
+    for (const [key, value] of Object.entries(prefs)) {
+      if (key.startsWith('agtools.') && key.endsWith('.flow_notice_collapsed')) {
+        safeSetLocalStorageItem(key, value);
+      }
+    }
+  }
+
+  if (bundle.user_memory && typeof bundle.user_memory === 'object') {
+    try {
+      const memory = bundle.user_memory as {
+        dismissed?: Record<string, boolean>;
+        lists?: Record<string, string[]>;
+      };
+      if (memory.dismissed) {
+        for (const [id, isDismissed] of Object.entries(memory.dismissed)) {
+          if (isDismissed) {
+            await invoke('mark_user_memory_dismissed', { id }).catch(() => {});
+          }
+        }
+      }
+      if (memory.lists) {
+        for (const [id, items] of Object.entries(memory.lists)) {
+          if (Array.isArray(items)) {
+            await invoke('save_user_memory_list', { id, items }).catch(() => {});
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   window.dispatchEvent(new Event('config-updated'));
+  window.dispatchEvent(new Event('app-config-changed'));
 
   return {
     applied: true,
@@ -610,16 +845,27 @@ function detectLegacyPlatform(value: unknown): PlatformId | null {
 
   const id = normalizeString(sample.id);
   if (id?.startsWith('codebuddy_cn_')) return 'codebuddy_cn';
+  if (id?.startsWith('workbuddy_ai_')) return 'workbuddy_ai';
   if (id?.startsWith('workbuddy_')) return 'workbuddy';
   if (id?.startsWith('codebuddy_')) return 'codebuddy';
+  if (id?.startsWith('qwenwork_')) return 'qwenwork';
+  if (id?.startsWith('qoder_cn_')) return 'qoder_cn';
+  if (id?.startsWith('qoder_')) return 'qoder';
+  if (id?.startsWith('trae_solo_cn_')) return 'trae_solo_cn';
+  if (id?.startsWith('trae_solo_')) return 'trae_solo';
+  if (id?.startsWith('trae_cn_')) return 'trae_cn';
+  if (id?.startsWith('trae_')) return 'trae';
 
   if ('trae_auth_raw' in sample || 'trae_profile_raw' in sample || 'trae_server_raw' in sample) {
     return 'trae';
   }
   if ('auth_user_info_raw' in sample || 'auth_credit_usage_raw' in sample || 'credits_usage_percent' in sample) {
+    if (stringContains(sample.domain, 'qwenwork') || stringContains(sample.email, 'qwenwork')) return 'qwenwork';
+    if (stringContains(sample.domain, 'qoder.cn')) return 'qoder_cn';
     return 'qoder';
   }
   if ('uid' in sample || 'enterprise_id' in sample || 'dosage_notify_code' in sample) {
+    if (stringContains(sample.domain, 'workbuddy-ai') || id?.startsWith('workbuddy_ai_')) return 'workbuddy_ai';
     if (stringContains(sample.domain, 'workbuddy')) return 'workbuddy';
     if (stringContains(sample.domain, 'codebuddy.cn')) return 'codebuddy_cn';
     if (stringContains(sample.domain, 'codebuddy')) return 'codebuddy';

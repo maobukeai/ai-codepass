@@ -30,8 +30,8 @@ export async function importWorkbuddyAiFromLocal(): Promise<WorkbuddyAccount[]> 
   return await invoke('import_workbuddy_ai_from_local');
 }
 
-export async function exportWorkbuddyAiAccounts(): Promise<string> {
-  return await invoke('export_workbuddy_ai_accounts');
+export async function exportWorkbuddyAiAccounts(accountIds?: string[]): Promise<string> {
+  return await invoke('export_workbuddy_ai_accounts', { accountIds: accountIds ?? null });
 }
 
 export async function refreshWorkbuddyAiToken(accountId: string): Promise<WorkbuddyAccount> {

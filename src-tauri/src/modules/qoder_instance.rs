@@ -62,6 +62,10 @@ pub fn load_instance_store_cn() -> Result<InstanceStore, String> {
     load_instance_store_for_platform(QoderPlatformKind::Cn)
 }
 
+pub fn load_instance_store_qwenwork() -> Result<InstanceStore, String> {
+    load_instance_store_for_platform(QoderPlatformKind::QwenWork)
+}
+
 pub fn save_instance_store_for_platform(kind: QoderPlatformKind, store: &InstanceStore) -> Result<(), String> {
     let path = instances_path_for_platform(kind)?;
     instance_store::save_instance_store(&path, instances_file_name(kind), store)
@@ -73,6 +77,10 @@ pub fn save_instance_store(store: &InstanceStore) -> Result<(), String> {
 
 pub fn save_instance_store_cn(store: &InstanceStore) -> Result<(), String> {
     save_instance_store_for_platform(QoderPlatformKind::Cn, store)
+}
+
+pub fn save_instance_store_qwenwork(store: &InstanceStore) -> Result<(), String> {
+    save_instance_store_for_platform(QoderPlatformKind::QwenWork, store)
 }
 
 pub fn load_default_settings_for_platform(kind: QoderPlatformKind) -> Result<DefaultInstanceSettings, String> {

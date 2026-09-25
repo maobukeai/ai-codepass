@@ -1,10 +1,13 @@
 import { ALL_PLATFORM_IDS, PlatformId } from '../types/platform';
+import { getTraeAccountPlatformId } from '../types/trae';
 import * as codebuddyService from './codebuddyService';
 import * as codebuddyCnService from './codebuddyCnService';
 import * as qoderService from './qoderService';
 import * as qoderCnService from './qoderCnService';
+import * as qwenworkService from './qwenworkService';
 import * as traeService from './traeService';
 import * as workbuddyService from './workbuddyService';
+import * as workbuddyAiService from './workbuddyAiService';
 
 type AccountWithId = { id: string };
 
@@ -14,7 +17,7 @@ interface TransferAdapter {
   importFromJson: (jsonContent: string) => Promise<unknown[]>;
 }
 
-const PLATFORM_ADAPTERS: Partial<Record<PlatformId, TransferAdapter>> = {
+const PLATFORM_ADAPTERS: Record<PlatformId, TransferAdapter> = {
   codebuddy: {
     listAccounts: codebuddyService.listCodebuddyAccounts,
     exportAccounts: codebuddyService.exportCodebuddyAccounts,
@@ -35,23 +38,40 @@ const PLATFORM_ADAPTERS: Partial<Record<PlatformId, TransferAdapter>> = {
     exportAccounts: qoderCnService.exportQoderAccounts,
     importFromJson: qoderCnService.importQoderFromJson,
   },
+  qwenwork: {
+    listAccounts: qwenworkService.listQoderAccounts,
+    exportAccounts: qwenworkService.exportQoderAccounts,
+    importFromJson: qwenworkService.importQoderFromJson,
+  },
   trae: {
-    listAccounts: traeService.listTraeAccounts,
+    listAccounts: async () => {
+      const all = await traeService.listTraeAccounts();
+      return all.filter((acc) => getTraeAccountPlatformId(acc) === 'trae');
+    },
     exportAccounts: traeService.exportTraeAccounts,
     importFromJson: traeService.importTraeFromJson,
   },
   trae_solo: {
-    listAccounts: traeService.listTraeAccounts,
+    listAccounts: async () => {
+      const all = await traeService.listTraeAccounts();
+      return all.filter((acc) => getTraeAccountPlatformId(acc) === 'trae_solo');
+    },
     exportAccounts: traeService.exportTraeAccounts,
     importFromJson: traeService.importTraeFromJson,
   },
   trae_cn: {
-    listAccounts: traeService.listTraeAccounts,
+    listAccounts: async () => {
+      const all = await traeService.listTraeAccounts();
+      return all.filter((acc) => getTraeAccountPlatformId(acc) === 'trae_cn');
+    },
     exportAccounts: traeService.exportTraeAccounts,
     importFromJson: traeService.importTraeFromJson,
   },
   trae_solo_cn: {
-    listAccounts: traeService.listTraeAccounts,
+    listAccounts: async () => {
+      const all = await traeService.listTraeAccounts();
+      return all.filter((acc) => getTraeAccountPlatformId(acc) === 'trae_solo_cn');
+    },
     exportAccounts: traeService.exportTraeAccounts,
     importFromJson: traeService.importTraeFromJson,
   },
@@ -59,6 +79,11 @@ const PLATFORM_ADAPTERS: Partial<Record<PlatformId, TransferAdapter>> = {
     listAccounts: workbuddyService.listWorkbuddyAccounts,
     exportAccounts: workbuddyService.exportWorkbuddyAccounts,
     importFromJson: workbuddyService.importWorkbuddyFromJson,
+  },
+  workbuddy_ai: {
+    listAccounts: workbuddyAiService.listWorkbuddyAiAccounts,
+    exportAccounts: (accountIds) => workbuddyAiService.exportWorkbuddyAiAccounts(accountIds),
+    importFromJson: workbuddyAiService.importWorkbuddyAiFromJson,
   },
 };
 

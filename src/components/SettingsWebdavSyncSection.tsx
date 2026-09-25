@@ -153,12 +153,13 @@ export function SettingsWebdavSyncSection() {
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
   const [syncingLatest, setSyncingLatest] = useState(false);
 
-  const applySettings = useCallback((next: WebdavSyncSettings) => {
+  const applySettings = useCallback((next?: WebdavSyncSettings | null) => {
+    if (!next) return;
     setSettings(next);
-    setUrl(next.url);
-    setUsername(next.username);
-    setRemoteDir(next.remote_dir);
-    setRetentionInput(String(next.retention_days));
+    setUrl(next.url || 'https://dav.jianguoyun.com/dav/');
+    setUsername(next.username || '');
+    setRemoteDir(next.remote_dir || 'cockpit-tools');
+    setRetentionInput(String(next.retention_days ?? 15));
     setPasswordInput('');
     setClearPassword(false);
   }, []);
