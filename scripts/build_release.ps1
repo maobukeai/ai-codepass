@@ -44,7 +44,11 @@ if (-not $msiSource) {
     throw "MSI build output not found in target directories!"
 }
 
-$msiTarget = Join-Path $releaseDir "AI-CodePass_1.0.0_x64_Setup.msi"
+$packageJson = Get-Content (Join-Path $workspaceRoot "package.json") -Raw | ConvertFrom-Json
+$version = $packageJson.version
+Write-Host "Target release version: $version"
+
+$msiTarget = Join-Path $releaseDir "AI-CodePass_${version}_x64_Setup.msi"
 Write-Host "Copying MSI from $($msiSource.FullName) to $msiTarget..."
 Copy-Item -Path $msiSource.FullName -Destination $msiTarget -Force
 
@@ -65,7 +69,7 @@ if (-not $exeSource) {
     throw "Release executable not found!"
 }
 
-$zipTarget = Join-Path $releaseDir "AI-CodePass_1.0.0_x64_Portable.zip"
+$zipTarget = Join-Path $releaseDir "AI-CodePass_${version}_x64_Portable.zip"
 if (Test-Path $zipTarget) {
     Remove-Item -Path $zipTarget -Force
 }
@@ -77,7 +81,7 @@ Write-Host "Calculating SHA-256 checksums..."
 $zipHash = (Get-FileHash -Path $zipTarget -Algorithm SHA256).Hash.ToUpper()
 $msiHash = (Get-FileHash -Path $msiTarget -Algorithm SHA256).Hash.ToUpper()
 
-$checksumContent = "$zipHash  AI-CodePass_1.0.0_x64_Portable.zip`r`n$msiHash  AI-CodePass_1.0.0_x64_Setup.msi`r`n"
+$checksumContent = "$zipHash  AI-CodePass_${version}_x64_Portable.zip`r`n$msiHash  AI-CodePass_${version}_x64_Setup.msi`r`n"
 $checksumPath = Join-Path $releaseDir "checksums.txt"
 [System.IO.File]::WriteAllText($checksumPath, $checksumContent, [System.Text.Encoding]::ASCII)
 

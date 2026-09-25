@@ -47,7 +47,7 @@ describe("updater release highlights", () => {
     const original = "### Changed\n\n- Other version";
 
     assert.equal(
-      prependUpdaterReleaseHighlights("1.0.1", original, "en"),
+      prependUpdaterReleaseHighlights("9.9.9", original, "en"),
       original,
     );
   });
@@ -60,8 +60,13 @@ describe("updater release highlights", () => {
     assert.equal(english.length, 4);
     assert.match(chinese[0], /三大 AI 编程助手专精管理/);
     assert.match(english[0], /Specialized Management for 3 Major AI Assistants/);
+
+    const v101Chinese = getUpdaterReleaseHighlightLines("v1.0.1", "zh-CN");
+    assert.equal(v101Chinese.length, 4);
+    assert.match(v101Chinese[0], /专属数据目录物理隔离/);
+
     assert.deepEqual(
-      getUpdaterReleaseHighlightLines("1.0.1", "zh-CN"),
+      getUpdaterReleaseHighlightLines("9.9.9", "zh-CN"),
       [],
     );
   });
