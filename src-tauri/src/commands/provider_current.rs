@@ -1,0 +1,152 @@
+use tauri::AppHandle;
+
+fn resolve_provider_current_account_id(platform: &str) -> Result<Option<String>, String> {
+    match platform {
+        "codebuddy" => {
+            let accounts = crate::modules::codebuddy_account::list_accounts();
+            Ok(crate::modules::codebuddy_account::resolve_current_account_id(&accounts))
+        }
+        "codebuddy_cn" | "codebuddy-cn" => {
+            let accounts = crate::modules::codebuddy_cn_account::list_accounts();
+            Ok(crate::modules::codebuddy_cn_account::resolve_current_account_id(&accounts))
+        }
+        "qoder" => {
+            let accounts = crate::modules::qoder_account::list_accounts();
+            Ok(crate::modules::qoder_account::resolve_current_account_id(
+                &accounts,
+            ))
+        }
+        "qoder_cn" | "qoder-cn" => {
+            let accounts = crate::modules::qoder_account::list_accounts_for_platform(
+                crate::modules::qoder_account::QoderPlatformKind::Cn,
+            );
+            Ok(crate::modules::qoder_account::resolve_current_account_id_cn(
+                &accounts,
+            ))
+        }
+        "qwenwork" | "qwen_work" | "qwen-work" => {
+            let accounts = crate::modules::qoder_account::list_accounts_for_platform(
+                crate::modules::qoder_account::QoderPlatformKind::QwenWork,
+            );
+            Ok(
+                crate::modules::qoder_account::resolve_current_account_id_for_platform(
+                    crate::modules::qoder_account::QoderPlatformKind::QwenWork,
+                    &accounts,
+                ),
+            )
+        }
+        "trae" | "trae_solo" | "trae-solo" | "trae_cn" | "trae-cn" | "trae_solo_cn"
+        | "trae-solo-cn" => {
+            let platform = crate::modules::trae_account::TraePlatformKind::parse(Some(platform))?;
+            let accounts = crate::modules::trae_account::list_accounts();
+            Ok(
+                crate::modules::trae_account::resolve_current_account_id_for_platform(
+                    &accounts, platform,
+                ),
+            )
+        }
+        "workbuddy" => {
+            let accounts = crate::modules::workbuddy_account::list_accounts();
+            Ok(crate::modules::workbuddy_account::resolve_current_account_id(&accounts))
+        }
+        "workbuddy_ai" | "workbuddy-ai" => {
+            let accounts = crate::modules::workbuddy_ai_account::list_accounts();
+            Ok(crate::modules::workbuddy_ai_account::resolve_current_account_id(&accounts))
+        }
+        other => Err(format!("不支持的平台: {}", other)),
+    }
+}
+
+#[tauri::command]
+pub async fn get_provider_current_account_id(
+    app: AppHandle,
+    platform: String,
+) -> Result<Option<String>, String> {
+    let current_account_id = resolve_provider_current_account_id(platform.trim())?;
+    let _ = crate::modules::tray::update_tray_menu(&app);
+    Ok(current_account_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::PathBuf;
+
+    struct DataDirGuard {
+        dir: PathBuf,
+        previous_data_dir: Option<String>,
+    }
+
+    impl DataDirGuard {
+        fn new(name: &str) -> Self {
+            let dir = std::env::temp_dir().join(format!(
+                "cockpit-provider-current-command-{}-{}",
+                name,
+                std::process::id()
+            ));
+            let _ = fs::remove_dir_all(&dir);
+            fs::create_dir_all(&dir).expect("create temp data dir");
+            let previous_data_dir = std::env::var("COCKPIT_TOOLS_DATA_DIR").ok();
+            std::env::set_var("COCKPIT_TOOLS_DATA_DIR", &dir);
+            Self {
+                dir,
+                previous_data_dir,
+            }
+        }
+    }
+
+    impl Drop for DataDirGuard {
+        fn drop(&mut self) {
+            match self.previous_data_dir.as_ref() {
+                Some(value) => std::env::set_var("COCKPIT_TOOLS_DATA_DIR", value),
+                None => std::env::remove_var("COCKPIT_TOOLS_DATA_DIR"),
+            }
+            let _ = fs::remove_dir_all(&self.dir);
+        }
+    }
+
+    #[test]
+    fn provider_current_command_supports_all_account_pages() {
+        let _lock = crate::modules::test_support::env_lock()
+            .lock()
+            .expect("lock env");
+        let _guard = DataDirGuard::new("supported-platforms");
+
+        for platform in [
+            "codebuddy",
+            "codebuddy_cn",
+            "codebuddy-cn",
+            "qoder",
+            "qoder_cn",
+            "qoder-cn",
+            "qwenwork",
+            "trae",
+            "trae_solo",
+            "trae_cn",
+            "trae_solo_cn",
+            "workbuddy",
+            "workbuddy_ai",
+            "workbuddy-ai",
+        ] {
+            let result = resolve_provider_current_account_id(platform)
+                .unwrap_or_else(|err| panic!("platform {platform} should be supported: {err}"));
+            assert_eq!(
+                result, None,
+                "empty data dir should have no current account"
+            );
+        }
+    }
+
+    #[test]
+    fn provider_current_command_rejects_unknown_platform() {
+        let _lock = crate::modules::test_support::env_lock()
+            .lock()
+            .expect("lock env");
+        let _guard = DataDirGuard::new("unsupported-platform");
+
+        let error = resolve_provider_current_account_id("unknown-platform")
+            .expect_err("unknown platform should be rejected");
+        assert!(error.contains("不支持的平台"));
+    }
+}

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AI CodePass",
+  "version": "1.0.0",
+  "identifier": "com.aicodepass.app",
+  "build": {
+    "beforeDevCommand": "node scripts/prepare-tauri.cjs && npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "node scripts/prepare-tauri.cjs && npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "AI CodePass",
+        "width": 880,
+        "height": 620,
+        "minWidth": 680,
+        "minHeight": 460,
+        "center": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "transparent": false,
+        "resizable": true
+      },
+      {
+        "label": "floating-card",
+        "title": "AI CodePass",
+        "create": false,
+        "width": 250,
+        "height": 290,
+        "minWidth": 250,
+        "minHeight": 290,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "resizable": false,
+        "skipTaskbar": true,
+        "alwaysOnTop": false,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "./windows/nsis/installer-hooks.nsh"
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libsecret-tools"
+        ]
+      }
+    },
+    "icon": [
+      "icons/48x48.png",
+      "icons/32x32.png",
+      "icons/16x16.png",
+      "icons/64x64.png",
+      "icons/128x128.png",
+      "icons/256x256.png",
+      "icons/512x512.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../src/assets/icons/codebuddy.png": "native-menu-icons/codebuddy.png",
+      "../src/assets/icons/qoder.png": "native-menu-icons/qoder.png",
+      "../src/assets/icons/trae.png": "native-menu-icons/trae.png",
+      "../src/assets/icons/trae-cn.png": "native-menu-icons/trae-cn.png",
+      "../src/assets/icons/trae-solo.png": "native-menu-icons/trae-solo.png",
+      "../src/assets/icons/trae-solo-cn.png": "native-menu-icons/trae-solo-cn.png",
+      "../src/assets/icons/workbuddy.png": "native-menu-icons/workbuddy.png"
+    },
+    "macOS": {
+      "bundleName": "AI CodePass",
+      "infoPlist": "Info.plist"
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "ai-codepass",
+          "aicodepass"
+        ]
+      }
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMxRkU1RTdBRDdCRUUzM0QKUldROTQ3N1hlbDcrd1ZVQ2E3b1ZoVUdXL3BWQmpjdzNnWllNUW1LNHVwcE9wdGI1Q1UxQmdnQ0oK",
+      "endpoints": [
+        "https://github.com/aicodepass/ai-codepass/releases/latest/download/latest-{{target}}.json",
+        "https://github.com/aicodepass/ai-codepass/releases/latest/download/latest.json"
+      ]
+    }
+  }
+}

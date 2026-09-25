@@ -1,0 +1,187 @@
+import { invoke } from '@tauri-apps/api/core';
+import { TraeAccount } from '../types/trae';
+import { getProviderCurrentAccountId } from './providerCurrentAccountService';
+
+export type TraePlatformId = 'trae' | 'trae_solo' | 'trae_cn' | 'trae_solo_cn';
+
+export interface TraeOAuthStartResponse {
+  loginId: string;
+  verificationUri: string;
+  expiresIn: number;
+  intervalSeconds: number;
+  callbackUrl?: string | null;
+}
+
+type TraeOAuthStartResponseRaw = Partial<TraeOAuthStartResponse> & {
+  login_id?: string;
+  verification_uri?: string;
+  expires_in?: number;
+  interval_seconds?: number;
+  callback_url?: string | null;
+};
+
+function normalizeTraeOAuthStartResponse(raw: TraeOAuthStartResponseRaw): TraeOAuthStartResponse {
+  const loginId = raw.loginId ?? raw.login_id ?? '';
+  const verificationUri = raw.verificationUri ?? raw.verification_uri ?? '';
+  const expiresIn = Number(raw.expiresIn ?? raw.expires_in ?? 0);
+  const intervalSeconds = Number(raw.intervalSeconds ?? raw.interval_seconds ?? 0);
+  const callbackUrl = raw.callbackUrl ?? raw.callback_url ?? null;
+
+  if (!loginId || !verificationUri) {
+    throw new Error('Trae OAuth start 响应缺少关键字段');
+  }
+
+  return {
+    loginId,
+    verificationUri,
+    expiresIn: Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 600,
+    intervalSeconds: Number.isFinite(intervalSeconds) && intervalSeconds > 0 ? intervalSeconds : 1,
+    callbackUrl,
+  };
+}
+
+export async function listTraeAccounts(): Promise<TraeAccount[]> {
+  return await invoke('list_trae_accounts');
+}
+
+export async function deleteTraeAccount(accountId: string): Promise<void> {
+  return await invoke('delete_trae_account', { accountId });
+}
+
+export async function deleteTraeAccounts(accountIds: string[]): Promise<void> {
+  return await invoke('delete_trae_accounts', { accountIds });
+}
+
+export async function importTraeFromJson(jsonContent: string): Promise<TraeAccount[]> {
+  return await invoke('import_trae_from_json', { jsonContent });
+}
+
+export async function importTraeFromLocal(
+  platformId: TraePlatformId = 'trae',
+): Promise<TraeAccount[]> {
+  return await invoke('import_trae_from_local', { platformId });
+}
+
+export async function traeOauthLoginStart(
+  platformId: TraePlatformId = 'trae',
+): Promise<TraeOAuthStartResponse> {
+  const raw = await invoke<TraeOAuthStartResponseRaw>('trae_oauth_login_start', { platformId });
+  return normalizeTraeOAuthStartResponse(raw);
+}
+
+export async function traeOauthLoginComplete(
+  loginId: string,
+  platformId: TraePlatformId = 'trae',
+): Promise<TraeAccount> {
+  return await invoke('trae_oauth_login_complete', { loginId, platformId });
+}
+
+export async function traeOauthLoginCancel(
+  loginId?: string,
+  platformId: TraePlatformId = 'trae',
+): Promise<void> {
+  return await invoke('trae_oauth_login_cancel', { loginId: loginId ?? null, platformId });
+}
+
+export async function traeOauthSubmitCallbackUrl(
+  loginId: string,
+  callbackUrl: string,
+  platformId: TraePlatformId = 'trae',
+): Promise<void> {
+  return await invoke('trae_oauth_submit_callback_url', { loginId, callbackUrl, platformId });
+}
+
+export async function exportTraeAccounts(accountIds: string[]): Promise<string> {
+  return await invoke('export_trae_accounts', { accountIds });
+}
+
+export async function refreshTraeToken(accountId: string): Promise<TraeAccount> {
+  return await invoke('refresh_trae_token', { accountId });
+}
+
+export async function refreshAllTraeTokens(platformId?: TraePlatformId): Promise<number> {
+  if (platformId) {
+    return await invoke('refresh_trae_tokens_for_platform', { platformId });
+  }
+  return await invoke('refresh_all_trae_tokens');
+}
+
+export async function addTraeAccountWithToken(accessToken: string): Promise<TraeAccount> {
+  return await invoke('add_trae_account_with_token', { accessToken });
+}
+
+export async function updateTraeAccountTags(accountId: string, tags: string[]): Promise<TraeAccount> {
+  return await invoke('update_trae_account_tags', { accountId, tags });
+}
+
+export async function getTraeAccountsIndexPath(): Promise<string> {
+  return await invoke('get_trae_accounts_index_path');
+}
+
+export async function getTraeCurrentAccountId(
+  platformId: TraePlatformId = 'trae',
+): Promise<string | null> {
+  return await getProviderCurrentAccountId(platformId);
+}
+
+export async function injectTraeAccount(
+  accountId: string,
+  platformId: TraePlatformId = 'trae',
+): Promise<string> {
+  return await invoke('inject_trae_account', { accountId, platformId });
+}
+
+// ============ 签到功能 ============
+
+/** 签到状态响应（与 Rust 后端 CheckinStatusResult 对齐） */
+export interface TraeCheckinStatusResult {
+  checked_in: boolean;
+  consecutive_days: number;
+  total_credits: number;
+  credits_earned_today: number;
+  checkin_date: string;
+  message: string;
+}
+
+const TRAE_CHECKIN_DEVICE_ID_PREFIX = 'agtools.trae.checkin_device_id';
+
+/** 获取或生成 Trae 账号专有的虚拟设备指纹（一账号一设备，杜绝同 ID 关联风控） */
+export function getTraeCheckinDeviceId(accountId?: string): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    const storageKey = accountId
+      ? `${TRAE_CHECKIN_DEVICE_ID_PREFIX}.${accountId}`
+      : TRAE_CHECKIN_DEVICE_ID_PREFIX;
+    let deviceId = localStorage.getItem(storageKey);
+    // 字节跳动设备 ID 必须为 8~24 位纯数字，清理历史生成的 did_ 开头非法指纹
+    if (!deviceId || !/^\d{8,24}$/.test(deviceId)) {
+      // 生成 16 位正数纯数字虚拟设备指纹
+      const randDigits = Array.from({ length: 16 }, (_, i) =>
+        i === 0
+          ? Math.floor(Math.random() * 9 + 1).toString()
+          : Math.floor(Math.random() * 10).toString(),
+      ).join('');
+      deviceId = randDigits;
+      localStorage.setItem(storageKey, deviceId);
+    }
+    return deviceId;
+  } catch {
+    return '';
+  }
+}
+
+/** 获取 Trae 账号的今日签到状态（自动注入账号专属设备指纹） */
+export async function getTraeCheckinStatus(
+  accountId: string,
+): Promise<TraeCheckinStatusResult> {
+  const deviceId = getTraeCheckinDeviceId(accountId);
+  return await invoke('get_trae_checkin_status', { accountId, deviceId });
+}
+
+/** 领取 Trae 账号的今日签到积分（自动注入账号专属设备指纹） */
+export async function claimTraeCheckin(
+  accountId: string,
+): Promise<TraeCheckinStatusResult> {
+  const deviceId = getTraeCheckinDeviceId(accountId);
+  return await invoke('claim_trae_checkin', { accountId, deviceId });
+}

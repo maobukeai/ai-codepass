@@ -1,0 +1,46 @@
+{
+  "name": "ai-codepass",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "test": "node scripts/run_ts_tests.cjs",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "npm run typecheck",
+    "build": "npm run sync-version && tsc && vite build",
+    "preview": "vite preview",
+    "pretauri:dev": "npm run typecheck",
+    "tauri:dev": "node scripts/tauri-dev.cjs",
+    "pretauri": "npm run typecheck",
+    "tauri": "node scripts/tauri.cjs",
+    "sync-version": "node scripts/sync-version.js"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "~2.10.0",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.3",
+    "@tauri-apps/plugin-dialog": "^2.7.0",
+    "@tauri-apps/plugin-fs": "^2.5.0",
+    "@tauri-apps/plugin-opener": "^2.5.3",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.10.0",
+    "blueimp-md5": "^2.19.0",
+    "i18next": "^25.7.4",
+    "lucide-react": "^0.562.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-i18next": "^16.5.3",
+    "zustand": "^5.0.10"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/blueimp-md5": "^2.18.2",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "tsx": "4.20.5",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4"
+  }
+}

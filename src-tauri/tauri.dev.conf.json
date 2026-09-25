@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AI CodePass",
+  "identifier": "com.aicodepass.app.dev",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "AI CodePass",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "transparent": false,
+        "resizable": true
+      },
+      {
+        "label": "floating-card",
+        "title": "AI CodePass",
+        "create": false,
+        "width": 250,
+        "height": 290,
+        "minWidth": 250,
+        "minHeight": 290,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "resizable": false,
+        "skipTaskbar": true,
+        "alwaysOnTop": false,
+        "visible": false
+      }
+    ]
+  },
+  "bundle": {
+    "icon": [
+      "icons/48x48.png",
+      "icons/32x32.png",
+      "icons/16x16.png",
+      "icons/64x64.png",
+      "icons/128x128.png",
+      "icons/256x256.png",
+      "icons/512x512.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
