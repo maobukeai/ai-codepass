@@ -39,6 +39,8 @@ async fn inject_bound_account(
         .map(str::trim)
         .filter(|value| !value.is_empty())
     else {
+        let _ = modules::instance_fingerprint::purge_residual_account_credentials(Path::new(user_data_dir));
+        let _ = modules::instance_fingerprint::load_or_create_fingerprint(Path::new(user_data_dir));
         return Ok(());
     };
 

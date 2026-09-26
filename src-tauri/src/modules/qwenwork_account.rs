@@ -55,10 +55,7 @@ pub fn detect_qwenwork_exec_path() -> Option<PathBuf> {
             let base = PathBuf::from(local_appdata).join("Programs");
             for dir_name in ["QwenWorkCN", "QwenWork", "QoderWorkCN", "QoderWork"] {
                 let app_root = base.join(dir_name);
-                let launcher = app_root.join("Launcher.exe");
-                if launcher.is_file() {
-                    return Some(launcher);
-                }
+                // 优先选择真实主程序 QwenWorkCN.exe（避免 Launcher.exe 吞掉 --user-data-dir 参数并唤醒旧实例）
                 let direct_exe = app_root.join("QwenWorkCN.exe");
                 if direct_exe.is_file() {
                     return Some(direct_exe);
@@ -74,6 +71,10 @@ pub fn detect_qwenwork_exec_path() -> Option<PathBuf> {
                     if let Some(latest) = version_exes.pop() {
                         return Some(latest);
                     }
+                }
+                let launcher = app_root.join("Launcher.exe");
+                if launcher.is_file() {
+                    return Some(launcher);
                 }
             }
         }
@@ -384,29 +385,86 @@ pub fn inject_to_qwenwork_dir(
             .map_err(|e| format!("写入 auth-v2.dat.json 失败: {}", e))?;
     }
 
-    if is_default_dir {
+    // 同步写入 .status.json（包括默认目录与当前实例沙箱目录，确保千问办公 C++ / Electron 均加载绑定账号）
+    let status_payload = json!({
+        "logged_in": true,
+        "username": account.user_id.clone().unwrap_or_else(|| account.id.clone()),
+        "name": account.display_name.clone().unwrap_or_else(|| account.email.clone()),
+        "email": account.email,
+        "user_type": "personal",
+        "plan": account.plan_type.clone().unwrap_or_else(|| "个人免费版".to_string()),
+        "version": "1.2.1",
+        "login_method": "browser",
+        "schema_version": 1,
+        "product": "qwenworkcn",
+        "snapshot_at": chrono::Utc::now().to_rfc3339(),
+        "writer": "main"
+    });
+    if let Ok(status_str) = serde_json::to_string_pretty(&status_payload) {
         let status_path = get_default_qwenwork_status_file_path();
         if let Some(parent) = status_path.parent() {
             let _ = fs::create_dir_all(parent);
         }
-        let status_payload = json!({
-            "logged_in": true,
-            "username": account.user_id.clone().unwrap_or_else(|| account.id.clone()),
-            "name": account.display_name.clone().unwrap_or_else(|| account.email.clone()),
-            "email": account.email,
-            "user_type": "personal",
-            "plan": account.plan_type.clone().unwrap_or_else(|| "个人免费版".to_string()),
-            "version": "1.2.1",
-            "login_method": "browser",
-            "schema_version": 1,
-            "product": "qwenworkcn",
-            "snapshot_at": chrono::Utc::now().to_rfc3339(),
-            "writer": "main"
-        });
-        if let Ok(status_str) = serde_json::to_string_pretty(&status_payload) {
-            let _ = fs::write(&status_path, status_str);
+        let _ = fs::write(&status_path, &status_str);
+
+        let instance_status_path = user_data_dir.join(".qwenworkcn").join(".status.json");
+        if let Some(parent) = instance_status_path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        let _ = fs::write(&instance_status_path, &status_str);
+    }
+
+    // 如果不是默认目录，同时将加密凭证同步至全局回退目录并注入当前实例的独立硬件指纹
+    if !is_default_dir {
+        let default_data_dir = get_default_qwenwork_user_data_dir();
+        if default_data_dir != user_data_dir {
+            let src_v2 = user_data_dir.join("auth-v2.dat");
+            if src_v2.exists() {
+                let _ = fs::copy(&src_v2, default_data_dir.join("auth-v2.dat"));
+            }
+        }
+        if let Ok(fp) = crate::modules::instance_fingerprint::load_or_create_fingerprint(user_data_dir) {
+            let _ = crate::modules::instance_fingerprint::inject_fingerprint_into_instance_storage(&default_data_dir, &fp);
         }
     }
+
+    Ok(())
+}
+
+/// 当启动未绑定账号的千问办公「空白实例」时，先备份现有本地账号，再清理残留登录态并注入新硬件指纹
+pub fn clear_qwenwork_login_state_for_blank_instance(user_data_dir: &Path) -> Result<(), String> {
+    // 1. 确保当前默认目录的已登录账号已安全导入到 AI CodePass 账号列表，绝不丢失原账号
+    let _ = import_from_local_qwenwork();
+
+    // 2. 清理实例目录与全局回退目录中的登录凭证，确保客户端启动后是 100% 空白未登录状态
+    let _ = crate::modules::instance_fingerprint::purge_residual_account_credentials(user_data_dir);
+    let default_data_dir = get_default_qwenwork_user_data_dir();
+    for file_name in ["auth-v2.dat", "auth-v2.dat.json"] {
+        let p1 = user_data_dir.join(file_name);
+        if p1.exists() {
+            let _ = fs::remove_file(&p1);
+        }
+        let p2 = default_data_dir.join(file_name);
+        if p2.exists() {
+            let _ = fs::remove_file(&p2);
+        }
+    }
+
+    let status_path = get_default_qwenwork_status_file_path();
+    if status_path.exists() {
+        let _ = fs::remove_file(&status_path);
+    }
+
+    // 3. 生成或加载该空白实例的专属系统与硬件指纹，并同步写入实例与运行目录
+    let fp = crate::modules::instance_fingerprint::load_or_create_fingerprint(user_data_dir)?;
+    let _ = crate::modules::instance_fingerprint::inject_fingerprint_into_instance_storage(user_data_dir, &fp);
+    let _ = crate::modules::instance_fingerprint::inject_fingerprint_into_instance_storage(&default_data_dir, &fp);
+    logger::log_info(&format!(
+        "[QwenWork Instance] 空白实例已彻底清理旧登录态并注入独立硬件指纹: dir={}, fp_id={}, machine_guid={}",
+        user_data_dir.display(),
+        fp.fingerprint_id,
+        fp.machine_guid
+    ));
 
     Ok(())
 }

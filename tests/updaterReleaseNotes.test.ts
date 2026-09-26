@@ -73,6 +73,10 @@ describe("updater release highlights", () => {
     assert.equal(v103Chinese.length, 4);
     assert.match(v103Chinese[0], /Trae 签到风控彻底修复/);
 
+    const v104Chinese = getUpdaterReleaseHighlightLines("v1.0.4", "zh-CN");
+    assert.equal(v104Chinese.length, 4);
+    assert.match(v104Chinese[0], /深度硬件指纹隔离与虚拟环境多开/);
+
     assert.deepEqual(
       getUpdaterReleaseHighlightLines("9.9.9", "zh-CN"),
       [],

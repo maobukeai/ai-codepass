@@ -718,6 +718,11 @@ pub fn run() {
             commands::codebuddy_instance::codebuddy_stop_instance,
             commands::codebuddy_instance::codebuddy_open_instance_window,
             commands::codebuddy_instance::codebuddy_close_all_instances,
+            // Instance Fingerprint & Hardware Isolation Commands
+            commands::instance::get_instance_fingerprint,
+            commands::instance::regenerate_instance_fingerprint,
+            commands::instance::preview_new_instance_fingerprint,
+            commands::instance::purge_instance_account_residuals,
             // CodeBuddy CN Commands
             commands::codebuddy_cn::list_codebuddy_cn_accounts,
             commands::codebuddy_cn::delete_codebuddy_cn_account,

@@ -1,6 +1,6 @@
 [package]
 name = "ai-codepass"
-version = "1.0.3"
+version = "1.0.4"
 description = "AI CodePass - Dedicated Account Manager & Auto Check-in for CodeBuddy, Qoder, Trae"
 authors = ["AI CodePass Team"]
 license = "MIT"

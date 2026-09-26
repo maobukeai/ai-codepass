@@ -3,6 +3,20 @@ const EN_SECTION_HEADER = '## Changelog (English)';
 const GITHUB_RELEASE_TAG_BASE_URL =
   'https://github.com/maobukeai/ai-codepass/releases/tag/v';
 const RELEASE_HIGHLIGHTS: Record<string, { zh: string; en: string }> = {
+  '1.0.4': {
+    zh: `### 重要更新
+
+- **深度硬件指纹隔离与虚拟环境多开**：新增实例级虚拟硬件指纹引擎（涵盖 MachineGuid、telemetry.machineId、devDeviceId、sqmId、真实厂商前缀 MAC 地址、SMBIOS UUID、磁盘序列号、主机名与 CPU/GPU 渲染签名），全方位阻断多开账号间的风控关联。
+- **空白纯净隔离环境与一键换新**：支持创建不继承任何历史残留的“纯净空白隔离实例”，并提供可视化硬件指纹沙箱检视面板与一键轮换重置硬件指纹能力。
+- **千问办公 (QwenWork CN) 多开与账号同步升级**：全面打通千问办公多实例独立目录隔离、进程级虚拟环境注入与账号状态实时同步。
+- **自动更新平滑升级与隐私加固**：彻底清理残留路径，统一专用签名密钥与全架构更新清单，支持 1.0.2/1.0.3 客户端一键平滑静默升级。`,
+    en: `### Highlights
+
+- **Deep Hardware Fingerprint & Sandbox Isolation**: Introduced per-instance virtual hardware fingerprinting (MachineGuid, telemetry.machineId, devDeviceId, sqmId, MAC Address, SMBIOS UUID, Disk Serial, Hostname, and GPU/CPU signatures) to prevent cross-account risk association.
+- **Blank Isolated Environment & One-Click Rotation**: Support creating pure blank isolated instances with credential cache purging and real-time hardware fingerprint inspection and rotation.
+- **QwenWork CN Multi-Instance & Account Enhancement**: Upgraded QwenWork CN multi-instance isolation, token injection, and status synchronization.
+- **Seamless Auto-Update & Privacy Hardening**: Sanitized residual paths and unified updater manifests for smooth in-app upgrades from v1.0.2/v1.0.3.`,
+  },
   '1.0.3': {
     zh: `### 重要更新
 

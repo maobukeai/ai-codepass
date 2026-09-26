@@ -55,6 +55,9 @@ fn inject_bound_account_for_instance_start(
         .map(str::trim)
         .filter(|value| !value.is_empty());
     let Some(bind_id) = bind_id else {
+        if !is_default {
+            modules::qwenwork_account::clear_qwenwork_login_state_for_blank_instance(Path::new(user_data_dir))?;
+        }
         return Ok(());
     };
 
@@ -300,6 +303,7 @@ pub async fn qwenwork_start_instance(instance_id: String) -> Result<InstanceProf
             None,
         );
     }
+    close_qwenwork_native_processes();
 
     inject_bound_account_for_instance_start(
         &instance.user_data_dir,
@@ -309,6 +313,18 @@ pub async fn qwenwork_start_instance(instance_id: String) -> Result<InstanceProf
 
     let mut cmd = Command::new(&exec_path);
     cmd.arg(format!("--user-data-dir={}", instance.user_data_dir));
+    let is_unbound = instance
+        .bind_account_id
+        .as_deref()
+        .map(str::trim)
+        .unwrap_or("")
+        .is_empty();
+    modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+        &mut cmd,
+        &instance.user_data_dir,
+        is_unbound,
+        false,
+    );
     let extra_args = modules::process::parse_extra_args(&instance.extra_args);
     if !extra_args.is_empty() {
         cmd.args(&extra_args);

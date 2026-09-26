@@ -28,8 +28,18 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  ShieldCheck,
+  Cpu,
+  Dices,
 } from "lucide-react";
 import { confirm as confirmDialog, open } from "@tauri-apps/plugin-dialog";
+import {
+  getInstanceFingerprint,
+  regenerateInstanceFingerprint,
+  previewNewInstanceFingerprint,
+  purgeInstanceAccountResiduals,
+  type InstanceFingerprintProfile,
+} from "../services/instanceFingerprintService";
 import md5 from "blueimp-md5";
 import {
   InstanceInitMode,
@@ -647,6 +657,79 @@ export function InstancesManager<TAccount extends AccountLike>({
     [stoppingInstanceIds],
   );
   const supportsInstanceInitialization = true;
+
+  const [instanceFingerprints, setInstanceFingerprints] = useState<
+    Record<string, InstanceFingerprintProfile>
+  >({});
+  const [previewFingerprint, setPreviewFingerprint] =
+    useState<InstanceFingerprintProfile | null>(null);
+  const [regeneratingFpId, setRegeneratingFpId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const entries = await Promise.all(
+        instances
+          .filter((item) => !item.isDefault && item.userDataDir)
+          .map(async (item) => {
+            const fp = await getInstanceFingerprint(item.userDataDir);
+            return [item.id, fp] as const;
+          }),
+      );
+      if (!cancelled && entries.length > 0) {
+        setInstanceFingerprints((prev) => {
+          const next = { ...prev };
+          for (const [id, fp] of entries) {
+            next[id] = fp;
+          }
+          return next;
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [instances]);
+
+  const handleRefreshPreviewFingerprint = useCallback(async () => {
+    const next = await previewNewInstanceFingerprint(
+      `${appType}_${Date.now()}_${Math.random()}`,
+    );
+    setPreviewFingerprint(next);
+  }, [appType]);
+
+  useEffect(() => {
+    if (showModal && !editing) {
+      void handleRefreshPreviewFingerprint();
+    }
+  }, [showModal, editing, handleRefreshPreviewFingerprint]);
+
+  const handleRegenerateInstanceFingerprint = useCallback(
+    async (instance: InstanceProfile) => {
+      if (!instance.userDataDir) return;
+      setRegeneratingFpId(instance.id);
+      try {
+        const nextFp = !instance.bindAccountId
+          ? await purgeInstanceAccountResiduals(instance.userDataDir)
+          : await regenerateInstanceFingerprint(instance.userDataDir);
+        setInstanceFingerprints((prev) => ({
+          ...prev,
+          [instance.id]: nextFp,
+        }));
+        setMessage({
+          text: `🛡️ 已重置「${instance.name || "默认实例"}」的系统与硬件指纹 (${nextFp.fingerprintId} · MAC ${nextFp.macAddress}) 并净空残留缓存`,
+        });
+      } catch (err) {
+        setMessage({
+          text: `重置硬件指纹失败: ${String(err)}`,
+          tone: "error",
+        });
+      } finally {
+        setRegeneratingFpId(null);
+      }
+    },
+    [],
+  );
   const supportsLaunchModeSelect = false;
   const resolveInstanceLaunchMode = (
     instance?: InstanceProfile | null,
@@ -2087,7 +2170,29 @@ export function InstancesManager<TAccount extends AccountLike>({
                         ? t("instances.defaultName", "默认实例")
                         : instance.name}
                     </span>
-
+                    {!instance.isDefault && instanceFingerprints[instance.id] && (
+                      <span
+                        className="instance-fp-badge"
+                        title={`系统与硬件指纹已隔离\nMachineGuid: ${instanceFingerprints[instance.id].machineGuid}\nMAC 地址: ${instanceFingerprints[instance.id].macAddress}\nSMBIOS UUID: ${instanceFingerprints[instance.id].smbiosUuid}\n硬盘序列号: ${instanceFingerprints[instance.id].diskSerial}\n主机名: ${instanceFingerprints[instance.id].hostname}`}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          padding: "2px 8px",
+                          borderRadius: "999px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          background: "rgba(16, 185, 129, 0.12)",
+                          color: "#059669",
+                          border: "1px solid rgba(16, 185, 129, 0.28)",
+                          marginLeft: "6px",
+                        }}
+                      >
+                        <ShieldCheck size={12} />
+                        {instanceFingerprints[instance.id].fingerprintId} · MAC{" "}
+                        {instanceFingerprints[instance.id].macAddress.slice(0, 8)}…
+                      </span>
+                    )}
                   </div>
                   {instance.extraArgs?.trim() && (
                     <div className="instance-sub-info">
@@ -2160,8 +2265,6 @@ export function InstancesManager<TAccount extends AccountLike>({
                   )}
                 </div>
 
-
-
                 <div className="instance-pid">
                   {instance.running ? (
                     <span className="pid-value">{instance.lastPid ?? "-"}</span>
@@ -2169,6 +2272,21 @@ export function InstancesManager<TAccount extends AccountLike>({
                 </div>
 
                 <div className="instance-actions">
+                  {!instance.isDefault && (
+                    <button
+                      className="icon-button"
+                      title="重置系统与硬件指纹 (更换 MachineGuid / MAC / SMBIOS UUID 并净空残留账号缓存)"
+                      onClick={() => void handleRegenerateInstanceFingerprint(instance)}
+                      disabled={
+                        regeneratingFpId === instance.id ||
+                        isInstanceBusy ||
+                        restartingAll ||
+                        bulkActionLoading
+                      }
+                    >
+                      <Dices size={16} />
+                    </button>
+                  )}
                   <button
                     className="icon-button"
                     title={floatingCardActionTitle}
@@ -2530,8 +2648,141 @@ export function InstancesManager<TAccount extends AccountLike>({
                     <div className="instance-init-note">
                       {t(
                         "instances.form.emptyInitHint",
-                        "选择无需复制实例，只会创建空白目录。需要启动一次后，才可以进行账号绑定。",
+                        "已开启深度空白净空：自动阻断读取宿主机全局 USERPROFILE / APPDATA / .qwenworkcn 旧登录态，并预先注入独立硬件指纹与 storage.json。",
                       )}
+                    </div>
+                  )}
+
+                  {previewFingerprint && (
+                    <div
+                      className="instance-fingerprint-layer-card"
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        background:
+                          "linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.07) 100%)",
+                        border: "1px solid rgba(16, 185, 129, 0.28)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            fontWeight: 600,
+                            fontSize: "13px",
+                            color: "var(--text-primary, #0f172a)",
+                          }}
+                        >
+                          <ShieldCheck size={16} style={{ color: "#10b981" }} />
+                          <span>
+                            系统与硬件指纹隔离层（防“一机两号”限制）
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              padding: "1px 6px",
+                              borderRadius: "999px",
+                              background: "rgba(16, 185, 129, 0.16)",
+                              color: "#059669",
+                            }}
+                          >
+                            已启用 L2 深度隔离
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => void handleRefreshPreviewFingerprint()}
+                          style={{
+                            padding: "4px 10px",
+                            fontSize: "12px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          <Dices size={13} />
+                          随机更换指纹
+                        </button>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                          gap: "6px 12px",
+                          fontSize: "11.5px",
+                          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                          background: "rgba(255, 255, 255, 0.55)",
+                          padding: "8px 10px",
+                          borderRadius: "8px",
+                          border: "1px solid rgba(148, 163, 184, 0.2)",
+                        }}
+                      >
+                        <div>
+                          <span style={{ color: "#64748b" }}>指纹档案 ID: </span>
+                          <strong style={{ color: "#059669" }}>
+                            {previewFingerprint.fingerprintId}
+                          </strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "#64748b" }}>虚拟网卡 MAC: </span>
+                          <strong>{previewFingerprint.macAddress}</strong>
+                        </div>
+                        <div style={{ gridColumn: "span 2" }}>
+                          <span style={{ color: "#64748b" }}>
+                            注册表 MachineGuid:{" "}
+                          </span>
+                          <strong>{previewFingerprint.machineGuid}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "#64748b" }}>硬盘序列号: </span>
+                          <strong>{previewFingerprint.diskSerial}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: "#64748b" }}>虚拟主机名: </span>
+                          <strong>{previewFingerprint.hostname}</strong>
+                        </div>
+                        <div style={{ gridColumn: "span 2" }}>
+                          <span style={{ color: "#64748b" }}>
+                            主板 SMBIOS UUID:{" "}
+                          </span>
+                          <strong>{previewFingerprint.smbiosUuid}</strong>
+                        </div>
+                      </div>
+
+                      <p
+                        style={{
+                          margin: "8px 0 0 0",
+                          fontSize: "11.5px",
+                          lineHeight: 1.5,
+                          color: "#475569",
+                        }}
+                      >
+                        <Cpu
+                          size={12}
+                          style={{
+                            display: "inline",
+                            verticalAlign: "-2px",
+                            marginRight: "4px",
+                            color: "#0ea5e9",
+                          }}
+                        />
+                        自动为该实例注入独立{" "}
+                        <code>MachineGuid</code>、<code>MAC 地址</code>、
+                        <code>telemetry.machineId</code> 与独立扩展/配置沙箱（
+                        <code>.sandbox/home</code>），彻底解决新建空白实例仍读取旧账号及同机活动受限问题。
+                      </p>
                     </div>
                   )}
                 </div>

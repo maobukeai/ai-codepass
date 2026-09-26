@@ -381,3 +381,47 @@ pub async fn open_instance_window(instance_id: String) -> Result<(), String> {
         })?;
     Ok(())
 }
+
+#[tauri::command]
+pub async fn get_instance_fingerprint(
+    user_data_dir: String,
+) -> Result<modules::instance_fingerprint::InstanceFingerprintProfile, String> {
+    let trimmed = user_data_dir.trim();
+    if trimmed.is_empty() {
+        return Ok(modules::instance_fingerprint::generate_fingerprint_profile(None));
+    }
+    modules::instance_fingerprint::load_or_create_fingerprint(Path::new(trimmed))
+}
+
+#[tauri::command]
+pub async fn regenerate_instance_fingerprint(
+    user_data_dir: String,
+) -> Result<modules::instance_fingerprint::InstanceFingerprintProfile, String> {
+    let trimmed = user_data_dir.trim();
+    if trimmed.is_empty() {
+        return Ok(modules::instance_fingerprint::generate_fingerprint_profile(None));
+    }
+    modules::instance_fingerprint::regenerate_fingerprint(Path::new(trimmed))
+}
+
+#[tauri::command]
+pub async fn preview_new_instance_fingerprint(
+    seed_hint: Option<String>,
+) -> Result<modules::instance_fingerprint::InstanceFingerprintProfile, String> {
+    Ok(modules::instance_fingerprint::generate_fingerprint_profile(
+        seed_hint.as_deref(),
+    ))
+}
+
+#[tauri::command]
+pub async fn purge_instance_account_residuals(
+    user_data_dir: String,
+) -> Result<modules::instance_fingerprint::InstanceFingerprintProfile, String> {
+    let trimmed = user_data_dir.trim();
+    if trimmed.is_empty() {
+        return Err("实例目录不能为空".to_string());
+    }
+    let path = Path::new(trimmed);
+    modules::instance_fingerprint::purge_residual_account_credentials(path)?;
+    modules::instance_fingerprint::regenerate_fingerprint(path)
+}

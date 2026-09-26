@@ -28,6 +28,8 @@ fn inject_bound_account_for_instance_start(
         .map(str::trim)
         .filter(|value| !value.is_empty());
     let Some(bind_id) = bind_id else {
+        let _ = modules::instance_fingerprint::purge_residual_account_credentials(Path::new(user_data_dir));
+        let _ = modules::instance_fingerprint::load_or_create_fingerprint(Path::new(user_data_dir));
         return Ok(());
     };
 

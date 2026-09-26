@@ -31,7 +31,7 @@ const FALLBACK_WORKBUDDY_SESSIONS: CodebuddySessionRecord[] = [
   {
     conversationId: 'wb-conv-981a24e0-771b-4c29-a84f-3109c8e1d021',
     title: '优化 Markdown 预览与目录大纲同步滚动',
-    cwd: 'C:/Users/20269/Desktop/项目文件夹/md管理器',
+    cwd: 'C:/Users/Developer/Workspace/md-manager',
     userId: '01a0d4bb-c39a-7731-997e-385f2e76636b',
     status: 'Completed',
     createdAt: Date.now() - 2 * 86400 * 1000,
@@ -42,7 +42,7 @@ const FALLBACK_WORKBUDDY_SESSIONS: CodebuddySessionRecord[] = [
   {
     conversationId: 'wb-conv-412f68b9-5c02-49e1-9310-89a1c02b7745',
     title: '实现本地文档全文检索与快捷键面板',
-    cwd: 'C:/Users/20269/Desktop/项目文件夹/md管理器',
+    cwd: 'C:/Users/Developer/Workspace/md-manager',
     userId: '01a0d4bb-c39a-7731-997e-385f2e76636b',
     status: 'Completed',
     createdAt: Date.now() - 2 * 86400 * 1000 - 3600 * 1000,

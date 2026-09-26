@@ -68,6 +68,8 @@ async fn inject_bound_account_for_instance_start(
         .map(str::trim)
         .filter(|value| !value.is_empty());
     let Some(bind_id) = bind_id else {
+        let _ = modules::instance_fingerprint::purge_residual_account_credentials(Path::new(user_data_dir));
+        let _ = modules::instance_fingerprint::load_or_create_fingerprint(Path::new(user_data_dir));
         return Ok(());
     };
 
@@ -191,10 +193,13 @@ fn ensure_codebuddy_state_db_path(user_data_dir: &str) -> Result<PathBuf, String
             match fs::copy(&default_db, &preferred) {
                 Ok(_) => {
                     modules::logger::log_info(&format!(
-                        "[CodeBuddy Inject] 已回退复制默认 state.vscdb: from={}, to={}",
+                        "[CodeBuddy Inject] 已回退复制默认 state.vscdb 并重洗实例指纹: from={}, to={}",
                         default_db.to_string_lossy(),
                         preferred.to_string_lossy()
                     ));
+                    if let Ok(fp) = modules::instance_fingerprint::load_or_create_fingerprint(root) {
+                        let _ = modules::instance_fingerprint::inject_fingerprint_into_instance_storage(root, &fp);
+                    }
                 }
                 Err(err) => {
                     modules::logger::log_warn(&format!(

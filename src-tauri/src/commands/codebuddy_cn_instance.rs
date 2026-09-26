@@ -73,10 +73,13 @@ fn ensure_codebuddy_cn_state_db_path(user_data_dir: &str) -> Result<PathBuf, Str
             match fs::copy(&default_db, &preferred) {
                 Ok(_) => {
                     modules::logger::log_info(&format!(
-                        "[CodeBuddy CN Inject] 已回退复制默认 state.vscdb: from={}, to={}",
+                        "[CodeBuddy CN Inject] 已回退复制默认 state.vscdb 并重洗实例指纹: from={}, to={}",
                         default_db.to_string_lossy(),
                         preferred.to_string_lossy()
                     ));
+                    if let Ok(fp) = modules::instance_fingerprint::load_or_create_fingerprint(root) {
+                        let _ = modules::instance_fingerprint::inject_fingerprint_into_instance_storage(root, &fp);
+                    }
                 }
                 Err(err) => {
                     modules::logger::log_warn(&format!(

@@ -27,6 +27,7 @@ pub mod group_settings;
 pub mod i18n;
 pub mod import;
 pub mod instance;
+pub mod instance_fingerprint;
 pub mod instance_store;
 pub mod linux_updater;
 pub mod logger;

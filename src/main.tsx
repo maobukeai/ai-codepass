@@ -28,6 +28,91 @@ if (typeof window !== 'undefined' && !(window as any).__TAURI_INTERNALS__) {
           account: null,
         };
       }
+      if (cmd.endsWith('_get_instance_defaults') || cmd === 'get_instance_defaults') {
+        const sub = cmd.replace('_get_instance_defaults', '') || 'qoder';
+        return {
+          root_dir: `C:\\Users\\Developer\\AppData\\Roaming\\.ai_codepass\\instances\\${sub}`,
+          default_user_data_dir: `C:\\Users\\Developer\\AppData\\Roaming\\${sub === 'qwenwork' ? 'QwenWorkCN' : sub}`,
+        };
+      }
+      const mockStoreKey = '__CODEPASS_MOCK_INSTANCES__';
+      if (!(window as any)[mockStoreKey]) {
+        (window as any)[mockStoreKey] = [
+          {
+            id: '__default__',
+            name: '',
+            user_data_dir: 'C:\\Users\\Developer\\AppData\\Roaming\\QwenWorkCN',
+            working_dir: null,
+            extra_args: '',
+            bind_account_id: 'qoder_uid_dingtalk_demo',
+            created_at: 0,
+            last_launched_at: Date.now() - 3600000,
+            last_pid: 18420,
+            running: true,
+            initialized: true,
+            is_default: true,
+            follow_local_account: false,
+          },
+          {
+            id: 'inst_blank_isolated_01',
+            name: '空白活动号-03 (硬件指纹隔离)',
+            userDataDir: 'C:\\Users\\Developer\\AppData\\Roaming\\.ai_codepass\\instances\\qwenwork\\blank-03',
+            user_data_dir: 'C:\\Users\\Developer\\AppData\\Roaming\\.ai_codepass\\instances\\qwenwork\\blank-03',
+            workingDir: null,
+            working_dir: null,
+            extraArgs: '',
+            extra_args: '',
+            bindAccountId: null,
+            bind_account_id: null,
+            createdAt: Date.now() - 1800000,
+            created_at: Date.now() - 1800000,
+            lastLaunchedAt: Date.now() - 600000,
+            last_launched_at: Date.now() - 600000,
+            lastPid: null,
+            last_pid: null,
+            running: false,
+            initialized: true,
+            isDefault: false,
+            is_default: false,
+            followLocalAccount: false,
+            follow_local_account: false,
+          },
+        ];
+      }
+      if (cmd.endsWith('_list_instances') || cmd === 'list_instances') {
+        return (window as any)[mockStoreKey];
+      }
+      if (cmd.endsWith('_create_instance') || cmd === 'create_instance') {
+        const userDataDir = _args?.userDataDir || _args?.user_data_dir || `C:\\Users\\Developer\\AppData\\Roaming\\.ai_codepass\\instances\\qwenwork\\${_args?.name || 'new'}`;
+        const bindAccountId = (_args?.initMode || _args?.init_mode) === 'empty' ? null : (_args?.bindAccountId || null);
+        const extraArgs = _args?.extraArgs || _args?.extra_args || '';
+        const created = {
+          id: `inst_${Date.now()}`,
+          name: _args?.name || '新建空白隔离实例',
+          userDataDir,
+          user_data_dir: userDataDir,
+          workingDir: null,
+          working_dir: null,
+          extraArgs,
+          extra_args: extraArgs,
+          bindAccountId,
+          bind_account_id: bindAccountId,
+          createdAt: Date.now(),
+          created_at: Date.now(),
+          lastLaunchedAt: null,
+          last_launched_at: null,
+          lastPid: null,
+          last_pid: null,
+          running: false,
+          initialized: true,
+          isDefault: false,
+          is_default: false,
+          followLocalAccount: false,
+          follow_local_account: false,
+        };
+        (window as any)[mockStoreKey] = [created, ...(window as any)[mockStoreKey]];
+        return created;
+      }
       if (cmd.startsWith('list_') || cmd.includes('accounts')) return [];
       if (cmd.startsWith('get_instances')) return [];
       if (cmd === 'get_general_config') return { ui_scale: 1, language: 'zh-CN', theme: 'system' };

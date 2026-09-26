@@ -225,6 +225,12 @@ pub fn start_codebuddy_with_args_with_new_window(
 
         let mut cmd = Command::new(&launch_path);
         apply_managed_proxy_env_to_command(&mut cmd);
+        crate::modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+            &mut cmd,
+            target,
+            false,
+            true,
+        );
         if should_detach_child() {
             cmd.creation_flags(0x08000000 | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
             cmd.stdin(Stdio::null())
@@ -470,6 +476,12 @@ pub fn start_codebuddy_cn_with_args_with_new_window(
 
         let mut cmd = Command::new(&launch_path);
         apply_managed_proxy_env_to_command(&mut cmd);
+        crate::modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+            &mut cmd,
+            target,
+            false,
+            true,
+        );
         if should_detach_child() {
             cmd.creation_flags(0x08000000 | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
             cmd.stdin(Stdio::null())
@@ -1009,6 +1021,12 @@ pub fn start_qoder_with_args_with_new_window(
 
         let mut cmd = Command::new(&launch_path);
         apply_managed_proxy_env_to_command(&mut cmd);
+        crate::modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+            &mut cmd,
+            target,
+            false,
+            true,
+        );
         if should_detach_child() {
             cmd.creation_flags(0x08000000 | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
             cmd.stdin(Stdio::null())
@@ -1242,6 +1260,12 @@ pub fn start_qoder_cn_with_args_with_new_window(
 
         let mut cmd = Command::new(&launch_path);
         apply_managed_proxy_env_to_command(&mut cmd);
+        crate::modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+            &mut cmd,
+            target,
+            false,
+            true,
+        );
         if should_detach_child() {
             cmd.creation_flags(0x08000000 | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
             cmd.stdin(Stdio::null())
@@ -1475,6 +1499,12 @@ pub fn start_trae_with_args_with_new_window(
 
         let mut cmd = Command::new(&launch_path);
         apply_managed_proxy_env_to_command(&mut cmd);
+        crate::modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+            &mut cmd,
+            target,
+            false,
+            true,
+        );
         if should_detach_child() {
             cmd.creation_flags(0x08000000 | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
             cmd.stdin(Stdio::null())
@@ -1596,6 +1626,12 @@ pub fn start_trae_platform_with_args_with_new_window(
 
         let mut cmd = Command::new(&launch_path);
         apply_managed_proxy_env_to_command(&mut cmd);
+        crate::modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+            &mut cmd,
+            target,
+            false,
+            true,
+        );
         if should_detach_child() {
             cmd.creation_flags(0x08000000 | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
             cmd.stdin(Stdio::null())

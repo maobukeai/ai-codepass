@@ -193,6 +193,9 @@ pub fn create_instance(params: CreateInstanceParams) -> Result<InstanceProfile, 
         fs::create_dir_all(&config_dir).map_err(|e| format!("创建实例目录失败：{}", e))?;
         fs::create_dir_all(&electron_dir)
             .map_err(|e| format!("创建 WorkBuddy Electron 数据目录失败：{}", e))?;
+        let _ = crate::modules::instance_fingerprint::purge_residual_account_credentials(&config_dir);
+        let _ = crate::modules::instance_fingerprint::load_or_create_fingerprint(&config_dir);
+        let _ = crate::modules::instance_fingerprint::load_or_create_fingerprint(&electron_dir);
     } else {
         // Official layout is config_root/.workbuddy + config_root/app.
         // Copy the whole config root so multi-instance keeps sessions/settings.
@@ -236,6 +239,7 @@ pub fn create_instance(params: CreateInstanceParams) -> Result<InstanceProfile, 
         }
 
         instance_store::copy_dir_recursive(&source_dir, &user_dir_path)?;
+        let _ = crate::modules::instance_fingerprint::regenerate_fingerprint(&user_dir_path);
     }
 
     let instance = InstanceProfile {

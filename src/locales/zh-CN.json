@@ -788,7 +788,7 @@
       "pathExistingDirHint": "以所选目录为准，不可编辑",
       "existingDirHint": "选择已有目录作为实例目录，以所选路径为准，不可编辑。",
       "bindExistingDirHint": "可选，将已有目录加入实例列表后可绑定账号",
-      "emptyInitHint": "选择无需复制实例，只会创建空白目录。需要启动一次后，才可以进行账号绑定。",
+      "emptyInitHint": "已开启深度空白净空：自动阻断读取宿主机全局 USERPROFILE / APPDATA / .qwenworkcn 旧登录态，并预先注入独立硬件指纹与 storage.json。",
       "copySource": "复制来源实例",
       "copySourceDesc": "从指定实例复制配置与登录信息",
       "copySourcePlaceholder": "选择来源实例",
@@ -873,7 +873,7 @@
     },
     "messages": {
       "created": "实例已创建",
-      "emptyCreated": "空白实例已创建，请先启动一次后再绑定账号",
+      "emptyCreated": "空白实例已创建（已自动注入独立系统与硬件指纹并净空旧登录态）",
       "existingDirCreated": "已使用所选目录创建实例",
       "updated": "实例已更新",
       "deleted": "实例已删除",

@@ -8,7 +8,27 @@ const DEFAULT_CHECK_INTERVAL_HOURS: u64 = 1;
 const LEGACY_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 24;
 const LEGACY_PREVIOUS_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 6;
 const PENDING_UPDATE_NOTES_FILE: &str = "pending_update_notes.json";
-const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.3] - 2026-09-26
+const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.4] - 2026-09-26
+
+### Highlights
+- Deep Hardware Fingerprint & Sandbox Isolation: Introduced per-instance virtual hardware fingerprinting (MachineGuid, telemetry.machineId, devDeviceId, sqmId, MAC Address, SMBIOS UUID, Disk Serial, Hostname, and GPU/CPU signatures) to prevent cross-account risk association.
+- Blank Isolated Environment & One-Click Rotation: Support creating pure blank isolated instances with credential cache purging and real-time hardware fingerprint inspection and rotation.
+- QwenWork CN Multi-Instance & Account Enhancement: Upgraded QwenWork CN multi-instance isolation, token injection, and status synchronization.
+
+### Added
+- Dedicated `instance_fingerprint` engine with realistic IEEE OUI MAC generation and SQLite `state.vscdb` / `storage.json` fingerprint injection
+- Interactive Hardware Fingerprint Sandbox Inspector modal in Instances Manager with one-click fingerprint regeneration
+- Support for creating Blank Isolated Instances with automatic legacy session cleanup
+
+### Changed
+- Enhanced process launch pipeline to inject virtualized hardware environment variables per isolated instance
+- Improved QwenWork CN account extraction and multi-instance binding workflow
+
+### Fixed
+- Fixed cross-instance device fingerprint leakage when running multiple IDE instances simultaneously
+- Sanitized residual fallback development paths in session and mock services
+
+## [1.0.3] - 2026-09-26
 
 ### Highlights
 - Trae Check-in Risk Control Resolution: Automatically extracts and decrypts genuine registered device identifiers from TinyStorage (aha.device.device_id) and running logs, eliminating ByteDance 9074 risk rejections.
@@ -93,7 +113,27 @@ const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.3] - 2026-09-26
 - Fixed desktop process sync during account switching
 "#;
 
-const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.3] - 2026-09-26
+const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.4] - 2026-09-26
+
+### 重要更新
+- 深度硬件指纹隔离与虚拟环境多开：新增实例级虚拟硬件指纹引擎（涵盖 MachineGuid、telemetry.machineId、devDeviceId、sqmId、真实厂商前缀 MAC 地址、SMBIOS UUID、磁盘序列号、主机名与 CPU/GPU 渲染签名），全方位阻断多开账号间的风控关联。
+- 空白纯净隔离环境与一键换新：支持创建不继承任何历史残留的“纯净空白隔离实例”，并提供可视化硬件指纹沙箱检视面板与一键轮换重置硬件指纹能力。
+- 千问办公 (QwenWork CN) 多开与账号同步升级：全面打通千问办公多实例独立目录隔离、进程级虚拟环境注入与账号状态实时同步。
+
+### 新增
+- 实例专属硬件指纹生成与持久化引擎（`instance_fingerprint`），自动向 `state.vscdb` 与 `storage.json` 注入虚拟设备指纹
+- 多开实例管理器新增硬件指纹徽章（`FP-XXXXXXXX`）与硬件指纹沙箱详情检视/一键换新弹窗
+- 新增“空白纯净隔离实例”初始化模式，自动清理目标实例中的历史凭据与会话残留
+
+### 变更
+- 升级编辑器进程启动链路，支持按实例注入虚拟硬件环境变量与隔离参数
+- 优化千问办公账号提取与多开实例绑定交互体验
+
+### 修复
+- 修复多开实例同时运行时可能共享物理机默认 telemetry 设备指纹导致风控关联的问题
+- 彻底清理前端备用会话与预览回退逻辑中的本地开发路径残留
+
+## [1.0.3] - 2026-09-26
 
 ### 重要更新
 - Trae 签到风控彻底修复：新增从本机真实 TinyStorage（aha.device.device_id）与日志中自动解密提取字节跳动已注册真实设备 ID，彻底解决 9074（当前参与用户太多）风控拦截。
