@@ -1476,8 +1476,23 @@ fn build_electron_auth_dat_payload(account: &QoderAccount) -> Option<Value> {
     Some(obj)
 }
 
-fn write_electron_auth_dat_if_present(data_root: &Path, account: &QoderAccount) -> Result<(), String> {
+fn write_electron_auth_dat_if_present(
+    kind: QoderPlatformKind,
+    data_root: &Path,
+    account: &QoderAccount,
+) -> Result<(), String> {
+    let _ = fs::create_dir_all(data_root);
     let local_state_path = data_root.join("Local State");
+    if !local_state_path.exists() {
+        if let Ok(default_dir) =
+            crate::modules::qoder_instance::get_default_qoder_user_data_dir_for_platform(kind)
+        {
+            let default_local_state = default_dir.join("Local State");
+            if default_local_state.exists() && default_local_state != local_state_path {
+                let _ = fs::copy(&default_local_state, &local_state_path);
+            }
+        }
+    }
     if !local_state_path.exists() {
         return Ok(());
     }
@@ -1660,7 +1675,7 @@ pub fn inject_to_qoder_for_platform(kind: QoderPlatformKind, account_id: &str) -
     }
     if let Ok(data_root) = crate::modules::qoder_instance::get_default_qoder_user_data_dir_for_platform(kind) {
         if let Some(account) = load_account_for_platform(kind, account_id) {
-            let _ = write_electron_auth_dat_if_present(&data_root, &account);
+            let _ = write_electron_auth_dat_if_present(kind, &data_root, &account);
         }
     }
     let db_path = ensure_default_state_db_path_for_platform(kind)?;
@@ -1691,11 +1706,37 @@ pub fn inject_to_qoder_for_user_data_dir_for_platform(
             false,
         );
     }
+    let target_dir = Path::new(user_data_dir);
     if let Some(account) = load_account_for_platform(kind, account_id) {
-        let _ = write_electron_auth_dat_if_present(Path::new(user_data_dir), &account);
+        let _ = write_electron_auth_dat_if_present(kind, target_dir, &account);
+        if let Ok(default_dir) =
+            crate::modules::qoder_instance::get_default_qoder_user_data_dir_for_platform(kind)
+        {
+            if default_dir != target_dir {
+                let _ = write_electron_auth_dat_if_present(kind, &default_dir, &account);
+            }
+        }
     }
     let db_path = ensure_state_db_path_for_user_data_dir_for_platform(kind, user_data_dir)?;
-    inject_to_qoder_at_path_for_platform(kind, &db_path, account_id)
+    inject_to_qoder_at_path_for_platform(kind, &db_path, account_id)?;
+    if let Ok(default_dir) =
+        crate::modules::qoder_instance::get_default_qoder_user_data_dir_for_platform(kind)
+    {
+        if default_dir != target_dir {
+            if let Ok(default_db) = ensure_default_state_db_path_for_platform(kind) {
+                let _ = inject_to_qoder_at_path_for_platform(kind, &default_db, account_id);
+            }
+            if let Ok(fp) = crate::modules::instance_fingerprint::load_or_create_fingerprint(target_dir) {
+                crate::modules::instance_fingerprint::inject_qoder_family_fingerprint(
+                    kind,
+                    &default_dir,
+                    target_dir,
+                    &fp,
+                );
+            }
+        }
+    }
+    Ok(())
 }
 
 pub fn inject_to_qoder_for_user_data_dir(
@@ -1754,7 +1795,7 @@ pub fn inject_to_qoder_at_path_for_platform(
     )?;
 
     if let Some(data_root) = db_path.parent().and_then(|p| p.parent()).and_then(|p| p.parent()) {
-        if let Err(e) = write_electron_auth_dat_if_present(data_root, &account) {
+        if let Err(e) = write_electron_auth_dat_if_present(kind, data_root, &account) {
             logger::log_warn(&format!("写入 auth.v1.dat 警告: {}", e));
         }
     }

@@ -77,6 +77,10 @@ describe("updater release highlights", () => {
     assert.equal(v104Chinese.length, 4);
     assert.match(v104Chinese[0], /深度硬件指纹隔离与虚拟环境多开/);
 
+    const v105Chinese = getUpdaterReleaseHighlightLines("v1.0.5", "zh-CN");
+    assert.equal(v105Chinese.length, 4);
+    assert.match(v105Chinese[0], /全链路沙箱目录与硬件指纹环境注入/);
+
     assert.deepEqual(
       getUpdaterReleaseHighlightLines("9.9.9", "zh-CN"),
       [],

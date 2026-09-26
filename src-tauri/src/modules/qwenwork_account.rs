@@ -436,10 +436,18 @@ pub fn clear_qwenwork_login_state_for_blank_instance(user_data_dir: &Path) -> Re
     // 1. 确保当前默认目录的已登录账号已安全导入到 AI CodePass 账号列表，绝不丢失原账号
     let _ = import_from_local_qwenwork();
 
-    // 2. 清理实例目录与全局回退目录中的登录凭证，确保客户端启动后是 100% 空白未登录状态
+    // 2. 清理实例目录与全局回退目录中的登录凭证与会话数据库，确保客户端启动后是 100% 空白未登录状态
     let _ = crate::modules::instance_fingerprint::purge_residual_account_credentials(user_data_dir);
     let default_data_dir = get_default_qwenwork_user_data_dir();
-    for file_name in ["auth-v2.dat", "auth-v2.dat.json"] {
+    let _ = crate::modules::instance_fingerprint::purge_residual_account_credentials(&default_data_dir);
+    for file_name in [
+        "auth.dat",
+        "auth-v2.dat",
+        "auth-v2.dat.json",
+        "data/agents.db",
+        "data/agents.db-wal",
+        "data/agents.db-shm",
+    ] {
         let p1 = user_data_dir.join(file_name);
         if p1.exists() {
             let _ = fs::remove_file(&p1);

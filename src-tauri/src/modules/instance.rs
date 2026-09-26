@@ -226,6 +226,8 @@ pub fn create_instance(params: CreateInstanceParams) -> Result<InstanceProfile, 
             }
         }
         fs::create_dir_all(&user_dir_path).map_err(|e| format!("创建实例目录失败: {}", e))?;
+        let _ = crate::modules::instance_fingerprint::purge_residual_account_credentials(&user_dir_path);
+        let _ = crate::modules::instance_fingerprint::load_or_create_fingerprint(&user_dir_path);
     } else {
         let source_dir = match params.copy_source_instance_id.as_deref() {
             Some("__default__") | None => get_default_user_data_dir()?,
@@ -257,6 +259,7 @@ pub fn create_instance(params: CreateInstanceParams) -> Result<InstanceProfile, 
         }
 
         instance_store::copy_dir_recursive(&source_dir, &user_dir_path)?;
+        let _ = crate::modules::instance_fingerprint::regenerate_fingerprint(&user_dir_path);
     }
 
     let instance = InstanceProfile {

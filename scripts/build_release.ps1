@@ -7,7 +7,12 @@ $ErrorActionPreference = "Stop"
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $workspaceRoot
 
+$packageJson = Get-Content (Join-Path $workspaceRoot "package.json") -Raw | ConvertFrom-Json
+$version = $packageJson.version
+Write-Host "Target release version: $version"
+
 if (-not $SkipBuild) {
+    $env:CI = "true"
     $keyPath = Join-Path $workspaceRoot ".tmp\updater_key"
     if (Test-Path $keyPath) {
         Write-Host "Loading updater signing key from $keyPath..."
@@ -18,8 +23,11 @@ if (-not $SkipBuild) {
         Write-Warning "updater_key not found at $keyPath. Building without updater private key."
     }
 
-    Write-Host "Running tauri build..."
-    npm run tauri -- build --bundles msi
+    Write-Host "Building frontend assets..."
+    npm run build
+
+    Write-Host "Running tauri build for version $version..."
+    npm run tauri -- build --ci --bundles msi
 }
 
 $releaseDir = Join-Path $workspaceRoot "release_artifacts"
@@ -28,8 +36,8 @@ if (-not (Test-Path $releaseDir)) {
 }
 
 $msiCandidates = @(
-    (Join-Path $workspaceRoot "target\release\bundle\msi\*.msi"),
-    (Join-Path $workspaceRoot "src-tauri\target\release\bundle\msi\*.msi")
+    (Join-Path $workspaceRoot "target\release\bundle\msi\*$version*.msi"),
+    (Join-Path $workspaceRoot "src-tauri\target\release\bundle\msi\*$version*.msi")
 )
 
 $msiSource = $null
@@ -42,12 +50,8 @@ foreach ($pattern in $msiCandidates) {
 }
 
 if (-not $msiSource) {
-    throw "MSI build output not found in target directories!"
+    throw "MSI build output for version $version not found in target directories!"
 }
-
-$packageJson = Get-Content (Join-Path $workspaceRoot "package.json") -Raw | ConvertFrom-Json
-$version = $packageJson.version
-Write-Host "Target release version: $version"
 
 $msiTarget = Join-Path $releaseDir "AI-CodePass_${version}_x64_Setup.msi"
 Write-Host "Copying MSI from $($msiSource.FullName) to $msiTarget..."

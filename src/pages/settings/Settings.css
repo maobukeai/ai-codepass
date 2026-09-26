@@ -20,6 +20,10 @@
   padding: 0;
 }
 
+.settings-content > * {
+  flex-shrink: 0;
+}
+
 .settings-general-fieldset {
   display: contents;
   min-width: 0;
@@ -99,6 +103,7 @@
   overflow: hidden;
   margin-bottom: 12px;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .group-title {
@@ -111,6 +116,7 @@
   letter-spacing: 0.02em;
   line-height: 1.2;
   text-transform: none;
+  flex-shrink: 0;
 }
 
 .group-title::before {

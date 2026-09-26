@@ -92,6 +92,12 @@ pub fn start_vscode_with_args_with_new_window(
 
         let mut cmd = Command::new(&launch_path);
         apply_managed_proxy_env_to_command(&mut cmd);
+        crate::modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+            &mut cmd,
+            target,
+            false,
+            true,
+        );
         if should_detach_child() {
             cmd.creation_flags(0x08000000 | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
             cmd.stdin(Stdio::null())
@@ -670,11 +676,20 @@ fn apply_workbuddy_instance_env(
     // Official WorkBuddy main process:
     //   WORKBUDDY_CONFIG_DIR / CODEBUDDY_CONFIG_DIR → ~/.workbuddy
     //   WORKBUDDY_USER_DATA_DIR → {config}/app  (also app.setPath("userData", ...))
-    // `--user-data-dir` alone is NOT enough: configureElectronApp() overrides userData.
-    // `open -a` cannot pass these envs, so managed instances must exec Electron directly.
+    //   WORKBUDDY_INSTANCE_NUMBER → sets electron.app.setName("WorkBuddy [<id>]") so
+    //     requestSingleInstanceLock() uses an independent SingletonLock mutex instead of
+    //     colliding with the running default WorkBuddy process!
+    //   WB_E2E_DISABLE_LEGACY_MIGRATION=true → prevents hidden BrowserWindow from re-migrating
+    //     legacy credentials/sessions from %APPDATA%\WorkBuddy on blank instances.
     cmd.env("WORKBUDDY_CONFIG_DIR", config_dir);
     cmd.env("CODEBUDDY_CONFIG_DIR", config_dir);
     cmd.env("WORKBUDDY_USER_DATA_DIR", electron_user_data_dir);
+    cmd.env("WB_E2E_DISABLE_LEGACY_MIGRATION", "true");
+    cmd.env("WB_E2E_DISABLE_STARTUP_REPAIR", "true");
+    if let Ok(fp) = crate::modules::instance_fingerprint::load_or_create_fingerprint(config_dir) {
+        cmd.env("WORKBUDDY_INSTANCE_NUMBER", &fp.fingerprint_id);
+        cmd.env("WORKBUDDY_APP_NAME", format!("WorkBuddy-{}", fp.fingerprint_id));
+    }
 }
 
 pub fn start_workbuddy_with_args_with_new_window(
@@ -698,6 +713,7 @@ pub fn start_workbuddy_with_args_with_new_window(
             e
         )
     })?;
+    let config_dir_str = config_dir.to_string_lossy().to_string();
     let electron_dir_str = electron_user_data_dir.to_string_lossy().to_string();
 
     #[cfg(target_os = "macos")]
@@ -707,6 +723,12 @@ pub fn start_workbuddy_with_args_with_new_window(
         let mut cmd = Command::new(&launch_path);
         apply_managed_proxy_env_to_command(&mut cmd);
         sanitize_macos_gui_launch_env(&mut cmd);
+        crate::modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+            &mut cmd,
+            &config_dir_str,
+            false,
+            false,
+        );
         apply_workbuddy_instance_env(&mut cmd, &config_dir, &electron_user_data_dir);
         cmd.arg(format!("--user-data-dir={}", electron_dir_str));
         if use_new_window {
@@ -755,6 +777,12 @@ pub fn start_workbuddy_with_args_with_new_window(
         let launch_path = resolve_workbuddy_launch_path()?;
         let mut cmd = Command::new(&launch_path);
         apply_managed_proxy_env_to_command(&mut cmd);
+        crate::modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+            &mut cmd,
+            &config_dir_str,
+            false,
+            false,
+        );
         apply_workbuddy_instance_env(&mut cmd, &config_dir, &electron_user_data_dir);
         if should_detach_child() {
             cmd.creation_flags(0x08000000 | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);

@@ -47,10 +47,18 @@ pub fn close_qwenwork_native_processes() {
 }
 
 fn inject_bound_account_for_instance_start(
+    instance_id: &str,
     user_data_dir: &str,
     bind_account_id: Option<&str>,
     is_default: bool,
 ) -> Result<(), String> {
+    modules::instance_fingerprint::sync_qoder_family_active_profile_on_start(
+        QoderPlatformKind::QwenWork,
+        instance_id,
+        Path::new(user_data_dir),
+        bind_account_id,
+    )?;
+
     let bind_id = bind_account_id
         .map(str::trim)
         .filter(|value| !value.is_empty());
@@ -242,6 +250,7 @@ pub async fn qwenwork_start_instance(instance_id: String) -> Result<InstanceProf
         let _ = modules::qoder_instance::update_default_pid_for_platform(QoderPlatformKind::QwenWork, None);
 
         inject_bound_account_for_instance_start(
+            DEFAULT_INSTANCE_ID,
             &default_dir_str,
             default_settings.bind_account_id.as_deref(),
             true,
@@ -304,8 +313,10 @@ pub async fn qwenwork_start_instance(instance_id: String) -> Result<InstanceProf
         );
     }
     close_qwenwork_native_processes();
+    let _ = modules::qoder_instance::update_default_pid_for_platform(QoderPlatformKind::QwenWork, None);
 
     inject_bound_account_for_instance_start(
+        &instance.id,
         &instance.user_data_dir,
         instance.bind_account_id.as_deref(),
         false,

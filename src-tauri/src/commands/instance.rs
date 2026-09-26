@@ -270,6 +270,10 @@ pub async fn start_instance(instance_id: String) -> Result<InstanceProfileView, 
         let account = modules::prepare_account_for_injection(account_id).await?;
         let profile_dir = std::path::PathBuf::from(&instance.user_data_dir);
         modules::instance::inject_account_to_profile_with_account(&profile_dir, &account)?;
+    } else {
+        let profile_dir = std::path::PathBuf::from(&instance.user_data_dir);
+        let _ = modules::instance_fingerprint::purge_residual_account_credentials(&profile_dir);
+        let _ = modules::instance_fingerprint::load_or_create_fingerprint(&profile_dir);
     }
 
     let extra_args = modules::process::parse_extra_args(&instance.extra_args);

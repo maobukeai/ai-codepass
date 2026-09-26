@@ -118,11 +118,24 @@
 .schedule-notification-modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 18px 22px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   min-height: 0;
+}
+
+.schedule-notification-modal-body > * {
+  flex-shrink: 0;
+}
+
+.schedule-notification-modal-body .settings-group {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.schedule-notification-modal-body .settings-row {
+  padding: 10px 16px;
 }
 
 /* Reset excessive margins inside modal */

@@ -1005,12 +1005,22 @@ export function InstancesManager<TAccount extends AccountLike>({
     if (editing) return;
     if (formInitMode === "empty") {
       setFormBindAccountId("");
+      lastAppliedCopySourceRef.current = "";
+      setFormName((current) => {
+        if (!current.trim() || current === copyAutoNameRef.current) {
+          const nextIndex = instances.filter((item) => !item.isDefault).length + 1;
+          const emptyDefaultName = `${t("instances.form.emptyDefaultName", "空白实例")} ${nextIndex}`;
+          copyAutoNameRef.current = emptyDefaultName;
+          return emptyDefaultName;
+        }
+        return current;
+      });
       return;
     }
     if (!formCopySourceInstanceId) {
       setFormCopySourceInstanceId(defaultInstanceId);
     }
-  }, [defaultInstanceId, editing, formCopySourceInstanceId, formInitMode]);
+  }, [defaultInstanceId, editing, formCopySourceInstanceId, formInitMode, instances, t]);
 
   useEffect(() => {
     if (!isAccountAllowedForLaunchMode || !formBindAccountId) return;

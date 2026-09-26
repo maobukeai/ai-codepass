@@ -114,11 +114,16 @@ fn resolve_running_pid(last_pid: Option<u32>, user_data_dir: Option<&str>) -> Op
 async fn inject_bound_account_for_instance_start(
     user_data_dir: &str,
     bind_account_id: Option<&str>,
+    is_default: bool,
 ) -> Result<(), String> {
     let bind_id = bind_account_id
         .map(str::trim)
         .filter(|value| !value.is_empty());
     let Some(bind_id) = bind_id else {
+        if !is_default {
+            let _ = modules::instance_fingerprint::purge_residual_account_credentials(Path::new(user_data_dir));
+            let _ = modules::instance_fingerprint::load_or_create_fingerprint(Path::new(user_data_dir));
+        }
         return Ok(());
     };
 
@@ -413,6 +418,7 @@ async fn codebuddy_cn_start_instance_internal(
         inject_bound_account_for_instance_start(
             &default_dir_str,
             default_settings.bind_account_id.as_deref(),
+            true,
         )
         .await?;
         if let Some(error) = launch_path_error.as_ref() {
@@ -461,6 +467,7 @@ async fn codebuddy_cn_start_instance_internal(
     inject_bound_account_for_instance_start(
         &instance.user_data_dir,
         instance.bind_account_id.as_deref(),
+        false,
     )
     .await?;
 

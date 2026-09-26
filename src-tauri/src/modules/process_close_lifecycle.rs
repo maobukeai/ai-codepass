@@ -1385,6 +1385,14 @@ pub fn start_antigravity_legacy_with_args(
             cmd.current_dir(parent);
         }
         apply_managed_proxy_env_to_command(&mut cmd);
+        if !user_data_dir.trim().is_empty() {
+            crate::modules::instance_fingerprint::apply_instance_isolation_and_fingerprint_to_command(
+                &mut cmd,
+                user_data_dir.trim(),
+                false,
+                true,
+            );
+        }
         if should_detach_child() {
             cmd.creation_flags(CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
             cmd.stdin(Stdio::null())

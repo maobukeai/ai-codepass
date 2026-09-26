@@ -34,13 +34,16 @@ async fn inject_bound_account(
     _platform: modules::trae_account::TraePlatformKind,
     user_data_dir: &str,
     bind_account_id: Option<&str>,
+    is_default: bool,
 ) -> Result<(), String> {
     let Some(account_id) = bind_account_id
         .map(str::trim)
         .filter(|value| !value.is_empty())
     else {
-        let _ = modules::instance_fingerprint::purge_residual_account_credentials(Path::new(user_data_dir));
-        let _ = modules::instance_fingerprint::load_or_create_fingerprint(Path::new(user_data_dir));
+        if !is_default {
+            let _ = modules::instance_fingerprint::purge_residual_account_credentials(Path::new(user_data_dir));
+            let _ = modules::instance_fingerprint::load_or_create_fingerprint(Path::new(user_data_dir));
+        }
         return Ok(());
     };
 
@@ -310,6 +313,7 @@ pub async fn trae_start_instance(
             platform,
             default_dir_str.as_str(),
             default_settings.bind_account_id.as_deref(),
+            true,
         )
         .await?;
 
@@ -369,6 +373,7 @@ pub async fn trae_start_instance(
         platform,
         &instance.user_data_dir,
         instance.bind_account_id.as_deref(),
+        false,
     )
     .await?;
 

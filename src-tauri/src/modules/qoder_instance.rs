@@ -420,6 +420,16 @@ pub fn create_instance_for_platform(
 
     store.instances.push(instance.clone());
     save_instance_store_for_platform(kind, &store)?;
+
+    if create_empty {
+        let _ = crate::modules::instance_fingerprint::sync_qoder_family_active_profile_on_start(
+            kind,
+            &instance.id,
+            &user_dir_path,
+            None,
+        );
+    }
+
     Ok(instance)
 }
 

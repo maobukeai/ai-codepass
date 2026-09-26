@@ -8,7 +8,27 @@ const DEFAULT_CHECK_INTERVAL_HOURS: u64 = 1;
 const LEGACY_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 24;
 const LEGACY_PREVIOUS_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 6;
 const PENDING_UPDATE_NOTES_FILE: &str = "pending_update_notes.json";
-const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.4] - 2026-09-26
+const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.5] - 2026-09-26
+
+### Highlights
+- Full-Chain Sandbox & Hardware Fingerprint Injection: Built independent `.sandbox/home` and `.sandbox/appdata` isolation hierarchies with comprehensive environment variable redirection (USERPROFILE, APPDATA, LOCALAPPDATA) and IDE device manifest auto-generation (.device.json, machine_id, installation_id).
+- Deep Credential Sanitization: Automatic purging of stale login tokens from `state.vscdb`, `storage.json`, and `.auth` directories when launching unbound or blank instances.
+- Universal Multi-Instance Lifecycle & UI Polish: Standardized multi-instance launch pipeline across Qoder, QwenWork, Trae, and CodeBuddy, with polished settings and schedule notification modal styling.
+
+### Added
+- Multi-tier sandbox filesystem initialization (.sandbox/home, .sandbox/appdata/Roaming, .sandbox/appdata/Local)
+- Dedicated device manifest generator for .qwenworkcn, .qoder, .qoder-cn, .trae, .trae-cn, .codebuddy, and .workbuddy
+- Stale credential purge utility for blank and unbound multi-instance launches
+
+### Changed
+- Refactored instance process launch commands to enforce sandboxed environment variables and isolate extension telemetry
+- Polished ScheduleNotificationModal and Settings visual layout and responsive styles
+
+### Fixed
+- Fixed potential cross-instance credential contamination when switching between isolated instances
+- Fixed telemetry device ID leakage into global user profile directories
+
+## [1.0.4] - 2026-09-26
 
 ### Highlights
 - Deep Hardware Fingerprint & Sandbox Isolation: Introduced per-instance virtual hardware fingerprinting (MachineGuid, telemetry.machineId, devDeviceId, sqmId, MAC Address, SMBIOS UUID, Disk Serial, Hostname, and GPU/CPU signatures) to prevent cross-account risk association.
@@ -113,7 +133,27 @@ const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.4] - 2026-09-26
 - Fixed desktop process sync during account switching
 "#;
 
-const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.4] - 2026-09-26
+const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.5] - 2026-09-26
+
+### 重要更新
+- 全链路沙箱目录与硬件指纹环境注入：为每个多开实例构建专属三级沙箱结构（`.sandbox/home`、`.sandbox/appdata/Roaming`、`.sandbox/appdata/Local`），并在进程启动时全面重定向系统环境变量（`USERPROFILE`、`APPDATA`、`LOCALAPPDATA`）与各大 AI 助手专属设备文件（`.device.json`、`machine_id`、`installation_id`）。
+- 历史凭据深度清理与防串号：在启动空白或未绑定实例时，自动清理 `state.vscdb`、`storage.json` 与 `.auth` 目录下的历史残留账号凭据，彻底杜绝历史账号残留。
+- 全平台实例生命周期标准化与界面打磨：统一 Qoder、千问办公、Trae、CodeBuddy 等多平台的沙箱启动链路，并优化定时通知弹窗与设置页面的排版间距。
+
+### 新增
+- 实例专属沙箱多级文件系统自动构建引擎
+- 自动生成针对千问办公、Qoder、Trae、CodeBuddy 等主流 AI 助手的专属设备清单与指纹文件
+- 空白与未绑定实例启动时的历史凭据自动清洗机制（`purge_residual_account_credentials`）
+
+### 变更
+- 升级各平台多开子进程启动参数，严格隔离全局用户目录与扩展遥测
+- 优化 ScheduleNotificationModal 与设置页面的响应式排版
+
+### 修复
+- 修复在多个独立实例间快速切换可能发生凭据缓存交叉污染的问题
+- 修复实例子进程可能向系统全局用户目录写入默认设备指纹的隐患
+
+## [1.0.4] - 2026-09-26
 
 ### 重要更新
 - 深度硬件指纹隔离与虚拟环境多开：新增实例级虚拟硬件指纹引擎（涵盖 MachineGuid、telemetry.machineId、devDeviceId、sqmId、真实厂商前缀 MAC 地址、SMBIOS UUID、磁盘序列号、主机名与 CPU/GPU 渲染签名），全方位阻断多开账号间的风控关联。

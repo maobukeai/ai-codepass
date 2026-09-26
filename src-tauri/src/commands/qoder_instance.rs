@@ -17,19 +17,33 @@ fn is_profile_initialized(user_data_dir: &str) -> bool {
 }
 
 fn resolve_running_pid(last_pid: Option<u32>, user_data_dir: Option<&str>) -> Option<u32> {
-    modules::process::resolve_qoder_pid(last_pid, user_data_dir)
+    if let Some(pid) = modules::process::resolve_qoder_pid(last_pid, user_data_dir) {
+        return Some(pid);
+    }
+    if let Some(pid) = last_pid {
+        if modules::process::is_pid_running(pid) {
+            return Some(pid);
+        }
+    }
+    None
 }
 
 fn inject_bound_account_for_instance_start(
+    instance_id: &str,
     user_data_dir: &str,
     bind_account_id: Option<&str>,
 ) -> Result<(), String> {
+    modules::instance_fingerprint::sync_qoder_family_active_profile_on_start(
+        modules::qoder_account::QoderPlatformKind::Global,
+        instance_id,
+        Path::new(user_data_dir),
+        bind_account_id,
+    )?;
+
     let bind_id = bind_account_id
         .map(str::trim)
         .filter(|value| !value.is_empty());
     let Some(bind_id) = bind_id else {
-        let _ = modules::instance_fingerprint::purge_residual_account_credentials(Path::new(user_data_dir));
-        let _ = modules::instance_fingerprint::load_or_create_fingerprint(Path::new(user_data_dir));
         return Ok(());
     };
 
@@ -194,6 +208,7 @@ pub async fn qoder_start_instance(instance_id: String) -> Result<InstanceProfile
         let _ = modules::qoder_instance::update_default_pid(None)?;
 
         inject_bound_account_for_instance_start(
+            DEFAULT_INSTANCE_ID,
             &default_dir_str,
             default_settings.bind_account_id.as_deref(),
         )?;
@@ -234,8 +249,10 @@ pub async fn qoder_start_instance(instance_id: String) -> Result<InstanceProfile
     }
     modules::process::close_qoder_instances(&[instance.user_data_dir.clone()], 20)?;
     let _ = modules::qoder_instance::update_instance_pid(&instance.id, None)?;
+    let _ = modules::qoder_instance::update_default_pid(None)?;
 
     inject_bound_account_for_instance_start(
+        &instance.id,
         &instance.user_data_dir,
         instance.bind_account_id.as_deref(),
     )?;

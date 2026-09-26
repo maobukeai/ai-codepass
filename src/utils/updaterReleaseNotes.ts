@@ -3,6 +3,20 @@ const EN_SECTION_HEADER = '## Changelog (English)';
 const GITHUB_RELEASE_TAG_BASE_URL =
   'https://github.com/maobukeai/ai-codepass/releases/tag/v';
 const RELEASE_HIGHLIGHTS: Record<string, { zh: string; en: string }> = {
+  '1.0.5': {
+    zh: `### 重要更新
+
+- **全链路沙箱目录与硬件指纹环境注入**：为每个多开实例构建专属三级沙箱结构（\`.sandbox/home\`、\`.sandbox/appdata/Roaming\`、\`.sandbox/appdata/Local\`），并在进程启动时全面重定向系统环境变量（\`USERPROFILE\`、\`APPDATA\`、\`LOCALAPPDATA\`）与各大 AI 助手专属设备文件。
+- **历史凭据深度清理与防串号**：在启动空白或未绑定实例时，自动清理 \`state.vscdb\`、\`storage.json\` 与 \`.auth\` 目录下的历史残留账号凭据，彻底杜绝历史账号残留。
+- **全平台实例生命周期标准化与界面打磨**：统一 Qoder、千问办公、Trae、CodeBuddy 等多平台的沙箱启动链路，并优化定时通知弹窗与设置页面的排版间距。
+- **自动更新平滑升级闭环**：统一专用签名密钥与全架构更新清单，支持 1.0.2 / 1.0.3 / 1.0.4 客户端一键平滑静默升级。`,
+    en: `### Highlights
+
+- **Full-Chain Sandbox & Hardware Fingerprint Injection**: Built independent \`.sandbox/home\` and \`.sandbox/appdata\` isolation hierarchies with comprehensive environment variable redirection (USERPROFILE, APPDATA, LOCALAPPDATA) and IDE device manifest auto-generation.
+- **Deep Credential Sanitization**: Automatic purging of stale login tokens from \`state.vscdb\`, \`storage.json\`, and \`.auth\` directories when launching unbound or blank instances.
+- **Universal Multi-Instance Lifecycle & UI Polish**: Standardized multi-instance launch pipeline across Qoder, QwenWork, Trae, and CodeBuddy, with polished settings and schedule notification modal styling.
+- **Seamless Auto-Update Upgrade Flow**: Unified dedicated updater signing keys and multi-target manifests for smooth in-app upgrades from v1.0.2/v1.0.3/v1.0.4.`,
+  },
   '1.0.4': {
     zh: `### 重要更新
 

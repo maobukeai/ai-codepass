@@ -8,11 +8,22 @@ const DEFAULT_INSTANCE_ID: &str = "__default__";
 async fn inject_bound_account_for_instance_start(
     user_data_dir: &str,
     bind_account_id: Option<&str>,
+    is_default: bool,
 ) -> Result<(), String> {
     let bind_id = bind_account_id
         .map(str::trim)
         .filter(|value| !value.is_empty());
     let Some(bind_id) = bind_id else {
+        if !is_default {
+            if let Ok((config_dir, electron_dir)) =
+                modules::workbuddy_instance::resolve_workbuddy_runtime_dirs(user_data_dir)
+            {
+                let _ = modules::instance_fingerprint::purge_residual_account_credentials(&config_dir);
+                let _ = modules::instance_fingerprint::purge_residual_account_credentials(&electron_dir);
+                let _ = modules::instance_fingerprint::load_or_create_fingerprint(&config_dir);
+                let _ = modules::instance_fingerprint::load_or_create_fingerprint(&electron_dir);
+            }
+        }
         return Ok(());
     };
 
@@ -219,6 +230,7 @@ pub async fn workbuddy_start_instance(instance_id: String) -> Result<InstancePro
         inject_bound_account_for_instance_start(
             &default_dir_str,
             default_settings.bind_account_id.as_deref(),
+            true,
         )
         .await?;
 
@@ -262,6 +274,7 @@ pub async fn workbuddy_start_instance(instance_id: String) -> Result<InstancePro
     inject_bound_account_for_instance_start(
         &instance.user_data_dir,
         instance.bind_account_id.as_deref(),
+        false,
     )
     .await?;
 

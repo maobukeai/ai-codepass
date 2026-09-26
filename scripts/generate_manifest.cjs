@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const version = process.argv[2] || '1.0.4';
+const version = process.argv[2] || '1.0.5';
 const releaseDir = path.resolve(__dirname, '..', 'release_artifacts');
 
 if (!fs.existsSync(releaseDir)) {
@@ -12,9 +12,9 @@ const pubDate = new Date().toISOString();
 const notes = [
   "### AI CodePass v" + version + " 重要更新",
   "",
-  "1. **深度硬件指纹隔离与虚拟环境多开**：新增实例级虚拟硬件指纹引擎（MachineGuid、telemetry.machineId、MAC 地址、SMBIOS UUID、磁盘序列号等），全方位阻断多开账号间的风控关联。",
-  "2. **空白纯净隔离环境与一键换新**：支持创建不继承任何历史残留的纯净空白隔离实例，提供可视化硬件指纹沙箱检视与一键轮换能力。",
-  "3. **千问办公多开与自动更新平滑升级**：打通千问办公独立实例环境注入与状态同步，支持 1.0.2/1.0.3 客户端一键静默升级。"
+  "1. **全链路沙箱目录与硬件指纹环境注入**：为每个多开实例构建专属三级沙箱结构，进程启动时全面重定向 USERPROFILE、APPDATA、LOCALAPPDATA 与各大 AI 助手专属设备文件。",
+  "2. **历史凭据深度清理与防串号**：在启动空白或未绑定实例时，自动清理 state.vscdb、storage.json 与 .auth 目录下的历史残留账号凭据，彻底杜绝历史账号残留。",
+  "3. **全平台实例生命周期标准化与自动更新**：统一主流 AI 编程助手多开启动链路，支持 1.0.2/1.0.3/1.0.4 客户端一键静默升级。"
 ].join("\n");
 
 let signature = "";
