@@ -589,12 +589,53 @@ pub fn check_version_jump() -> Result<Option<VersionJumpInfo>, String> {
 
     logger::log_info(&format!("检测到版本跳跃: {} -> {}", previous, current));
 
+    clean_stale_updater_temp_files();
+
     Ok(Some(VersionJumpInfo {
         previous_version: previous,
         current_version: current,
         release_notes,
         release_notes_zh,
     }))
+}
+
+/// Proactively clean temporary installer files left behind by updater in %TEMP%
+pub fn clean_stale_updater_temp_files() {
+    let temp_dir = std::env::temp_dir();
+    let Ok(entries) = std::fs::read_dir(&temp_dir) else {
+        return;
+    };
+
+    let now = SystemTime::now();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let file_name = entry.file_name();
+        let name_lossy = file_name.to_string_lossy().to_lowercase();
+
+        let is_updater_artifact = (name_lossy.contains("ai-codepass")
+            || name_lossy.contains("ai codepass")
+            || name_lossy.starts_with(".tauri-updater"))
+            && (name_lossy.contains("updater") || name_lossy.contains("installer") || name_lossy.ends_with(".msi") || name_lossy.ends_with(".exe"));
+
+        if !is_updater_artifact {
+            continue;
+        }
+
+        // Only delete files/directories older than 30 minutes to avoid deleting active in-flight downloads
+        if let Ok(metadata) = entry.metadata() {
+            if let Ok(modified) = metadata.modified() {
+                if let Ok(elapsed) = now.duration_since(modified) {
+                    if elapsed.as_secs() > 1800 {
+                        if metadata.is_dir() {
+                            let _ = std::fs::remove_dir_all(&path);
+                        } else {
+                            let _ = std::fs::remove_file(&path);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]

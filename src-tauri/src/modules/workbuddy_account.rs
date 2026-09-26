@@ -641,7 +641,15 @@ pub fn upsert_account(payload: WorkbuddyOAuthCompletePayload) -> Result<Workbudd
     let identity_seed = incoming_uid
         .clone()
         .or_else(|| incoming_email.clone())
-        .unwrap_or_else(|| "workbuddy_user".to_string())
+        .or_else(|| {
+            let tok = payload.access_token.trim();
+            if !tok.is_empty() {
+                Some(format!("{:x}", md5::compute(tok.as_bytes())))
+            } else {
+                None
+            }
+        })
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string())
         .to_lowercase();
     let generated_id = format!("workbuddy_{:x}", md5::compute(identity_seed.as_bytes()));
 

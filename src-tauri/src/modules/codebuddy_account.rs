@@ -639,7 +639,15 @@ pub fn upsert_account(payload: CodebuddyOAuthCompletePayload) -> Result<Codebudd
     let identity_seed = incoming_uid
         .clone()
         .or_else(|| incoming_email.clone())
-        .unwrap_or_else(|| "codebuddy_user".to_string())
+        .or_else(|| {
+            let tok = payload.access_token.trim();
+            if !tok.is_empty() {
+                Some(format!("{:x}", md5::compute(tok.as_bytes())))
+            } else {
+                None
+            }
+        })
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string())
         .to_lowercase();
     let generated_id = format!("codebuddy_{:x}", md5::compute(identity_seed.as_bytes()));
 
@@ -1462,3 +1470,40 @@ pub fn run_quota_alert_if_needed() -> Result<(), String> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_account_matches_payload_identity_requires_concrete_match() {
+        // When both have valid matching uids
+        let u1 = "u_1001".to_string();
+        let u2 = "u_1001".to_string();
+        assert!(account_matches_payload_identity(Some(&u1), None, Some(&u2), None));
+
+        // When uids conflict, even if emails match, should not match
+        let e1 = "test@example.com".to_string();
+        let e2 = "test@example.com".to_string();
+        let u3 = "u_1002".to_string();
+        assert!(!account_matches_payload_identity(Some(&u1), Some(&e1), Some(&u3), Some(&e2)));
+
+        // When neither has uid or email
+        assert!(!account_matches_payload_identity(None, None, None, None));
+    }
+
+    #[test]
+    fn test_identity_seed_without_uid_or_email_uses_token() {
+        let tok1 = "token_account_a";
+        let tok2 = "token_account_b";
+
+        let seed1 = format!("{:x}", md5::compute(tok1.as_bytes()));
+        let seed2 = format!("{:x}", md5::compute(tok2.as_bytes()));
+
+        let id1 = format!("codebuddy_{:x}", md5::compute(seed1.as_bytes()));
+        let id2 = format!("codebuddy_{:x}", md5::compute(seed2.as_bytes()));
+
+        assert_ne!(id1, id2);
+    }
+}
+

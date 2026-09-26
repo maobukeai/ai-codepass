@@ -37,6 +37,10 @@ const manifest = {
       signature: signature,
       url: `https://github.com/maobukeai/ai-codepass/releases/download/v${version}/AI-CodePass_${version}_x64_Setup.msi`
     },
+    "windows-x86_64-nsis": {
+      signature: signature,
+      url: `https://github.com/maobukeai/ai-codepass/releases/download/v${version}/AI-CodePass_${version}_x64_Setup.msi`
+    },
     "x86_64-pc-windows-msvc": {
       signature: signature,
       url: `https://github.com/maobukeai/ai-codepass/releases/download/v${version}/AI-CodePass_${version}_x64_Setup.msi`
@@ -47,5 +51,7 @@ const manifest = {
 const jsonStr = JSON.stringify(manifest, null, 2);
 fs.writeFileSync(path.join(releaseDir, 'latest.json'), jsonStr, 'utf8');
 fs.writeFileSync(path.join(releaseDir, 'latest-windows-x86_64.json'), jsonStr, 'utf8');
+fs.writeFileSync(path.join(releaseDir, 'latest-windows-x86_64-nsis.json'), jsonStr, 'utf8');
+fs.writeFileSync(path.join(releaseDir, 'latest-windows-x86_64-msi.json'), jsonStr, 'utf8');
 
-console.log(`Successfully generated latest.json and latest-windows-x86_64.json for v${version}`);
+console.log(`Successfully generated latest manifests (all windows targets) for v${version}`);

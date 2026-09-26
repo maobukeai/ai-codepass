@@ -1191,7 +1191,7 @@ fn resolve_payload_identity(payload: &TraeImportPayload) -> String {
     normalize_non_empty(payload.user_id.as_deref())
         .or_else(|| normalize_email(Some(payload.email.as_str())))
         .or_else(|| normalize_non_empty(Some(payload.access_token.as_str())))
-        .unwrap_or_else(|| "trae_user".to_string())
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string())
 }
 
 fn resolve_payload_platform_kind(payload: &TraeImportPayload) -> TraePlatformKind {

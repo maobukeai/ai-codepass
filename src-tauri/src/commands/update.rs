@@ -152,6 +152,7 @@ pub fn update_log(level: String, message: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn get_update_runtime_info() -> Result<UpdateRuntimeInfo, String> {
+    update_checker::clean_stale_updater_temp_files();
     Ok(linux_updater::get_update_runtime_info())
 }
 

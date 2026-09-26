@@ -299,10 +299,14 @@ pub fn upsert_account(payload: WorkbuddyOAuthCompletePayload) -> Result<Workbudd
     let _lock = WORKBUDDY_AI_ACCOUNT_INDEX_LOCK.lock().unwrap();
     let now = now_ts();
 
-    let account_id = if let Some(ref uid) = payload.uid {
-        format!("wb_ai_{}", uid)
+    let account_id = if let Some(ref uid) = payload.uid.as_deref().filter(|s| !s.trim().is_empty()) {
+        format!("wb_ai_{}", uid.trim())
+    } else if !payload.email.trim().is_empty() && payload.email.contains('@') {
+        format!("wb_ai_{}", payload.email.trim().replace('@', "_").replace('.', "_"))
+    } else if !payload.access_token.trim().is_empty() {
+        format!("wb_ai_{:x}", md5::compute(payload.access_token.trim().as_bytes()))
     } else {
-        format!("wb_ai_{}", payload.email.replace('@', "_").replace('.', "_"))
+        format!("wb_ai_{}", uuid::Uuid::new_v4().simple())
     };
 
     let account_path = get_account_path(&account_id)?;
