@@ -119,13 +119,20 @@ export function CodeBuddyQuotaCategoryList({ groups, formatNumber, formatDateTim
                 <span className="quota-category-icon" style={{ color: CATEGORY_COLORS[group.key] }}>
                   {CATEGORY_ICONS[group.key]}
                 </span>
-                <span className="quota-category-label">{group.label}</span>
+                <span className="quota-category-label" title={group.label}>{group.label}</span>
                 {hasDetails && (
-                  <span className="quota-category-count">({group.items.length})</span>
+                  <span className="quota-category-count" title={`${group.items.length} 个资源包`}>({group.items.length})</span>
                 )}
               </div>
               <div className="quota-category-stats">
-                <span className="quota-category-value">
+                <span
+                  className="quota-category-value"
+                  title={
+                    group.unlimited
+                      ? t('common.shared.quota.unlimited', '无限额度')
+                      : `${formatNumber(group.used)} / ${formatNumber(group.total)}`
+                  }
+                >
                   {group.unlimited
                     ? t('common.shared.quota.unlimited', '无限额度')
                     : `${formatNumber(group.used)} / ${formatNumber(group.total)}`}
@@ -148,7 +155,7 @@ export function CodeBuddyQuotaCategoryList({ groups, formatNumber, formatDateTim
 
             {/* 常驻外层到期/重置时间展示 */}
             {groupTime && (
-              <div className="quota-category-meta-row">
+              <div className="quota-category-meta-row" title={groupTime.text}>
                 <Clock size={11} className="quota-category-time-icon" />
                 <span className="quota-category-time-text">{groupTime.text}</span>
               </div>

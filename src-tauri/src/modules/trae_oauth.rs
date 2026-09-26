@@ -886,7 +886,7 @@ fn decode_url_component(raw: &str) -> String {
     }
 }
 
-fn extract_device_id_from_logs(platform: trae_account::TraePlatformKind) -> Option<String> {
+pub(crate) fn extract_device_id_from_logs(platform: trae_account::TraePlatformKind) -> Option<String> {
     let patterns = [
         r"resolve device_id:\s*([0-9]{8,24})",
         r#""device_id"\s*:\s*"([0-9]{8,24})""#,

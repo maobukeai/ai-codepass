@@ -638,6 +638,25 @@ use super::*;
         );
     }
 
+    #[test]
+    fn test_tiny_storage_device_id_decrypt() {
+        let cipher = "dGMFEAAALbzLl7ly2SFCqQRxHuoCdF2X/MAJIfBtrHxUJhPQ/H9ER4CjPeCraPhm91l+XUbmcxk3NmqmRy2UgVVtcJCO5JKnrPXuTLRvF5h+i0Aqm7pLQJJchQqlOudqYSTcvKf4dICHHmeRSJETTQ/9MEq2W/ASKNJJmvFxoqNOu9WhR0GnumcD0q27YxnO6b7DcLrEmymI+1C5OQizTX7ActV+8nLkZ7DuqxUuOdTbf9VL/Ir/A04in8yh0Gpmxn6PIgTLOKvB4O95eAQ8fbpsKjQuki6fWovEkp37WRoD2X24zHWrwmBP24NGl/RHhJBvQsgB";
+        let val = serde_json::Value::String(cipher.to_string());
+        let res = parse_value_or_json_string_or_icube_cipher(Some(&val));
+        println!("Decrypted result: {:?}", res);
+        assert!(res.is_some());
+    }
+
+    #[test]
+    fn test_resolve_checkin_device_id_prefers_tiny_storage() {
+        let account = sample_account();
+        let resolved = resolve_checkin_device_id(&account, "");
+        println!("Resolved device_id: {}", resolved);
+        assert!(!resolved.is_empty());
+        assert!(resolved.len() >= 8 && resolved.len() <= 24);
+        assert!(resolved.chars().all(|c| c.is_ascii_digit()));
+    }
+
 
 
 

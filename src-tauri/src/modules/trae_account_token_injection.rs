@@ -2712,15 +2712,92 @@ struct TraeCheckinClaimResponse {
     pub message: String,
 }
 
-/// 解析或生成符合字节跳动风控规范的 8~24 位纯数字设备 ID
+fn extract_device_id_from_tiny_storage(preferred_platform: TraePlatformKind) -> Option<String> {
+    let is_valid_numeric = |s: &str| -> bool {
+        s.len() >= 8 && s.len() <= 24 && s.chars().all(|c| c.is_ascii_digit())
+    };
+
+    let mut platforms = vec![preferred_platform];
+    for p in [
+        TraePlatformKind::TraeSoloCn,
+        TraePlatformKind::TraeCn,
+        TraePlatformKind::TraeSolo,
+        TraePlatformKind::Trae,
+    ] {
+        if !platforms.contains(&p) {
+            platforms.push(p);
+        }
+    }
+
+    for platform in platforms {
+        let Ok(data_dir) = get_default_trae_data_dir_for_platform(platform) else {
+            continue;
+        };
+        let tiny_storage_path = data_dir.join("aha").join("TinyStorage");
+        if !tiny_storage_path.exists() {
+            continue;
+        }
+        let Ok(content) = fs::read_to_string(&tiny_storage_path) else {
+            continue;
+        };
+        let Ok(json) = serde_json::from_str::<Value>(&content) else {
+            continue;
+        };
+        if let Some(cipher_val) = json.pointer("/tiny_storage_data/aha.device.device_id") {
+            if let Some(decrypted) = parse_value_or_json_string_or_icube_cipher(Some(cipher_val)) {
+                if let Some(dev_id) = decrypted.get("device_id_str").and_then(|v| v.as_str()) {
+                    if is_valid_numeric(dev_id) {
+                        return Some(dev_id.to_string());
+                    }
+                }
+                if let Some(dev_id) = decrypted.get("device_id").and_then(|v| v.as_str()) {
+                    if is_valid_numeric(dev_id) {
+                        return Some(dev_id.to_string());
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+/// 解析或生成符合字节跳动风控规范的 8~24 位纯数字设备 ID（优先从本机已注册 TinyStorage/日志提取真实设备指纹）
 fn resolve_checkin_device_id(account: &TraeAccount, passed_device_id: &str) -> String {
     let is_valid_numeric = |s: &str| -> bool {
         s.len() >= 8 && s.len() <= 24 && s.chars().all(|c| c.is_ascii_digit())
     };
-    if is_valid_numeric(passed_device_id) {
-        return passed_device_id.to_string();
+
+    let platform = resolve_account_platform_kind(account);
+
+    // 1. 优先从本机真实 Trae TinyStorage (aha.device.device_id) 解密提取已注册设备 ID
+    if let Some(dev_id) = extract_device_id_from_tiny_storage(platform) {
+        if is_valid_numeric(&dev_id) {
+            return dev_id;
+        }
     }
-    // 检查账号元数据中存储的真实设备 ID
+
+    // 2. 尝试从本机 Trae 运行日志中提取已注册 device_id
+    if let Some(dev_id) = crate::modules::trae_oauth::extract_device_id_from_logs(platform) {
+        if is_valid_numeric(&dev_id) {
+            return dev_id;
+        }
+    }
+    for alt_platform in [
+        TraePlatformKind::TraeSoloCn,
+        TraePlatformKind::TraeCn,
+        TraePlatformKind::TraeSolo,
+        TraePlatformKind::Trae,
+    ] {
+        if alt_platform != platform {
+            if let Some(dev_id) = crate::modules::trae_oauth::extract_device_id_from_logs(alt_platform) {
+                if is_valid_numeric(&dev_id) {
+                    return dev_id;
+                }
+            }
+        }
+    }
+
+    // 3. 检查账号元数据中存储的真实设备 ID
     if let Some(auth) = &account.trae_auth_raw {
         if let Some(dev_id) = auth.pointer("/deviceInfo/DeviceID").and_then(|v| v.as_str()) {
             if is_valid_numeric(dev_id) {
@@ -2738,7 +2815,13 @@ fn resolve_checkin_device_id(account: &TraeAccount, passed_device_id: &str) -> S
             }
         }
     }
-    // 确定性保底：根据账号 ID 计算哈希，生成稳定的 16 位正数纯数字 ID
+
+    // 4. 用户显式传入的合法设备 ID (如有)
+    if is_valid_numeric(passed_device_id) {
+        return passed_device_id.to_string();
+    }
+
+    // 5. 确定性保底：根据账号 ID 计算哈希，生成稳定的 16 位正数纯数字 ID
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
     let mut hasher = DefaultHasher::new();

@@ -506,7 +506,7 @@
 .accounts-page .accounts-grid,
 .ghcp-accounts-page .ghcp-accounts-grid,
 .ghcp-accounts-page .accounts-grid {
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 10px;
   padding-bottom: 24px;
 }

@@ -145,26 +145,19 @@ export interface TraeCheckinStatusResult {
 
 const TRAE_CHECKIN_DEVICE_ID_PREFIX = 'agtools.trae.checkin_device_id';
 
-/** 获取或生成 Trae 账号专有的虚拟设备指纹（一账号一设备，杜绝同 ID 关联风控） */
+/** 获取用户显式配置的 Trae 签到设备 ID，默认返回空字符串交由后端自动提取本机真实已注册 TinyStorage/日志设备 ID */
 export function getTraeCheckinDeviceId(accountId?: string): string {
   if (typeof window === 'undefined') return '';
   try {
     const storageKey = accountId
       ? `${TRAE_CHECKIN_DEVICE_ID_PREFIX}.${accountId}`
       : TRAE_CHECKIN_DEVICE_ID_PREFIX;
-    let deviceId = localStorage.getItem(storageKey);
-    // 字节跳动设备 ID 必须为 8~24 位纯数字，清理历史生成的 did_ 开头非法指纹
-    if (!deviceId || !/^\d{8,24}$/.test(deviceId)) {
-      // 生成 16 位正数纯数字虚拟设备指纹
-      const randDigits = Array.from({ length: 16 }, (_, i) =>
-        i === 0
-          ? Math.floor(Math.random() * 9 + 1).toString()
-          : Math.floor(Math.random() * 10).toString(),
-      ).join('');
-      deviceId = randDigits;
-      localStorage.setItem(storageKey, deviceId);
+    // 清理历史生成的伪随机本地设备 ID，避免因伪造 ID 触发字节跳动 9074 风控拦截
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      localStorage.removeItem(storageKey);
     }
-    return deviceId;
+    return '';
   } catch {
     return '';
   }
