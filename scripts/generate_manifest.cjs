@@ -18,21 +18,27 @@ const notes = [
   "4. **极致体积与启动速度**：去除冗余语言包与废弃代码，安装包与免安装包控制在 8.5MB 内，毫秒级冷启动。"
 ].join("\n");
 
+let signature = "";
+const msiSigPath = path.join(releaseDir, `AI-CodePass_${version}_x64_Setup.msi.sig`);
+if (fs.existsSync(msiSigPath)) {
+  signature = fs.readFileSync(msiSigPath, 'utf8').trim();
+}
+
 const manifest = {
   version: version,
   notes: notes,
   pub_date: pubDate,
   platforms: {
     "windows-x86_64": {
-      signature: "",
+      signature: signature,
       url: `https://github.com/maobukeai/ai-codepass/releases/download/v${version}/AI-CodePass_${version}_x64_Setup.msi`
     },
     "windows-x86_64-msi": {
-      signature: "",
+      signature: signature,
       url: `https://github.com/maobukeai/ai-codepass/releases/download/v${version}/AI-CodePass_${version}_x64_Setup.msi`
     },
     "x86_64-pc-windows-msvc": {
-      signature: "",
+      signature: signature,
       url: `https://github.com/maobukeai/ai-codepass/releases/download/v${version}/AI-CodePass_${version}_x64_Setup.msi`
     }
   }

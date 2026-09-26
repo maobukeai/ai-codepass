@@ -84,9 +84,14 @@ $msiHash = (Get-FileHash -Path $msiTarget -Algorithm SHA256).Hash.ToUpper()
 $checksumContent = "$zipHash  AI-CodePass_${version}_x64_Portable.zip`r`n$msiHash  AI-CodePass_${version}_x64_Setup.msi`r`n"
 $checksumPath = Join-Path $releaseDir "checksums.txt"
 [System.IO.File]::WriteAllText($checksumPath, $checksumContent, [System.Text.Encoding]::ASCII)
+$privateKeyPath = Join-Path $workspaceRoot ".tmp\updater_key"
+if (Test-Path $privateKeyPath) {
+    Write-Host "Signing MSI release artifact with project private key..."
+    npx @tauri-apps/cli signer sign -p "aicodepass2026" -f $privateKeyPath $msiTarget
+}
 
 Write-Host "Generating latest.json updater manifests via node..."
-node (Join-Path $scriptDir "generate_manifest.cjs") $version
+node (Join-Path $PSScriptRoot "generate_manifest.cjs") $version
 
 Write-Host "`n==== Packaging Release Successful ===="
 Write-Host "MSI:  $msiTarget ($((Get-Item $msiTarget).Length) bytes, SHA-256: $msiHash)"
