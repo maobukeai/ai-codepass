@@ -119,7 +119,14 @@ fn normalize_non_empty(value: Option<&str>) -> Option<String> {
 }
 
 fn normalize_email(value: Option<&str>) -> Option<String> {
-    normalize_non_empty(value).map(|v| v.to_lowercase())
+    normalize_non_empty(value).and_then(|raw| {
+        let trimmed = raw.trim().to_lowercase();
+        if trimmed.contains('@') && !trimmed.starts_with('@') && !trimmed.ends_with('@') && !trimmed.starts_with("unknown@") && !trimmed.ends_with("@qoder.local") {
+            Some(trimmed)
+        } else {
+            None
+        }
+    })
 }
 
 fn sanitize_account_id_component(value: &str) -> String {
@@ -153,6 +160,35 @@ fn generate_account_id(
         }
     }
 
+    if let Some(val) = snapshot.user_info_raw.as_ref() {
+        if let Some(tok) = crate::modules::qwenwork_account::get_fresh_token_for_platform(
+            QoderPlatformKind::Global,
+            &QoderAccount {
+                id: String::new(),
+                email: String::new(),
+                user_id: None,
+                display_name: None,
+                plan_type: None,
+                credits_used: None,
+                credits_total: None,
+                credits_remaining: None,
+                credits_usage_percent: None,
+                quota_query_last_error: None,
+                quota_query_last_error_at: None,
+                usage_updated_at: None,
+                tags: None,
+                auth_user_info_raw: Some(val.clone()),
+                auth_user_plan_raw: None,
+                auth_credit_usage_raw: None,
+                created_at: 0,
+                last_used: 0,
+            },
+        ) {
+            let digest = md5::compute(tok.as_bytes());
+            return format!("qoder_tok_{:x}", digest);
+        }
+    }
+
     let basis = format!(
         "{}|{}|{}",
         snapshot
@@ -171,8 +207,13 @@ fn generate_account_id(
             .map(|v| v.to_string())
             .unwrap_or_default(),
     );
-    let digest = md5::compute(basis.as_bytes());
-    format!("qoder_{:x}", digest)
+    let trimmed = basis.trim();
+    if !trimmed.is_empty() && trimmed != "||" {
+        let digest = md5::compute(basis.as_bytes());
+        return format!("qoder_{:x}", digest);
+    }
+
+    format!("qoder_{}", uuid::Uuid::new_v4().simple())
 }
 
 fn get_data_dir() -> Result<PathBuf, String> {
@@ -741,25 +782,33 @@ fn clamp_percent(value: f64) -> f64 {
 }
 
 fn extract_snapshot_email(snapshot: &QoderSnapshot) -> Option<String> {
-    let candidates = [
-        snapshot.user_info_raw.as_ref(),
+    if let Some(val) = snapshot.user_info_raw.as_ref() {
+        if let Some(email) = find_string_by_exact_keys(val, &["email", "mail", "user_email", "userEmail"]) {
+            if let Some(norm) = normalize_email(Some(email.as_str())) {
+                return Some(norm);
+            }
+        }
+        if let Some(email) = find_first_email(val) {
+            if let Some(norm) = normalize_email(Some(email.as_str())) {
+                return Some(norm);
+            }
+        }
+    }
+
+    let other_candidates = [
         snapshot.user_plan_raw.as_ref(),
         snapshot.credit_usage_raw.as_ref(),
     ];
-    for value in candidates.into_iter().flatten() {
+    for value in other_candidates.into_iter().flatten() {
         if let Some(email) = find_string_by_exact_keys(value, &["email", "mail"]) {
-            return Some(email.to_lowercase());
+            if let Some(norm) = normalize_email(Some(email.as_str())) {
+                return Some(norm);
+            }
         }
         if let Some(email) = find_first_email(value) {
-            return Some(email);
-        }
-    }
-    for value in candidates.into_iter().flatten() {
-        if let Some(phone) = find_string_by_exact_keys(value, &["phone", "mobile"]) {
-            return Some(phone);
-        }
-        if let Some(name) = find_string_by_exact_keys(value, &["name", "username", "nickname"]) {
-            return Some(name);
+            if let Some(norm) = normalize_email(Some(email.as_str())) {
+                return Some(norm);
+            }
         }
     }
     None
@@ -978,25 +1027,33 @@ fn same_identity(
     email: Option<&str>,
     generated_id: &str,
 ) -> bool {
-    if let (Some(left), Some(right)) = (
-        normalize_non_empty(account.user_id.as_deref()),
-        normalize_non_empty(user_id),
-    ) {
-        if left.eq_ignore_ascii_case(&right) {
+    let acc_uid = normalize_non_empty(account.user_id.as_deref());
+    let incoming_uid = normalize_non_empty(user_id);
+    if let (Some(left), Some(right)) = (acc_uid.as_ref(), incoming_uid.as_ref()) {
+        if !left.is_empty() && !right.is_empty() {
+            return left.eq_ignore_ascii_case(right);
+        }
+    }
+
+    let acc_email = normalize_email(Some(account.email.as_str()));
+    let incoming_email = normalize_email(email);
+    if let (Some(left), Some(right)) = (acc_email.as_ref(), incoming_email.as_ref()) {
+        if !left.is_empty() && !right.is_empty() {
+            return left == right;
+        }
+    }
+
+    if !generated_id.is_empty()
+        && !generated_id.starts_with("qoder_email_unknown")
+        && !generated_id.starts_with("qoder_unknown")
+        && !generated_id.starts_with("qoder_user_")
+    {
+        if account.id == generated_id {
             return true;
         }
     }
 
-    if let (Some(left), Some(right)) = (
-        normalize_email(Some(account.email.as_str())),
-        normalize_email(email),
-    ) {
-        if left == right {
-            return true;
-        }
-    }
-
-    account.id == generated_id
+    false
 }
 
 fn normalize_tags(tags: Vec<String>) -> Option<Vec<String>> {
@@ -1024,7 +1081,15 @@ fn snapshot_to_account(snapshot: QoderSnapshot, existing: Option<&QoderAccount>)
     let now = now_ts();
     let email = extract_snapshot_email(&snapshot)
         .or_else(|| existing.and_then(|item| normalize_email(Some(item.email.as_str()))))
-        .unwrap_or_else(|| "unknown@qoder.local".to_string());
+        .or_else(|| {
+            snapshot.user_info_raw.as_ref().and_then(|val| {
+                find_string_by_exact_keys(val, &["phone", "mobile", "username", "nickname", "name"])
+            })
+        })
+        .unwrap_or_else(|| {
+            let rand_suffix: String = uuid::Uuid::new_v4().simple().to_string().chars().take(8).collect();
+            format!("user_{}@qoder.local", rand_suffix)
+        });
     let user_id = extract_snapshot_user_id(&snapshot)
         .or_else(|| existing.and_then(|item| item.user_id.clone()));
     let generated_id = generate_account_id(&snapshot, user_id.as_deref(), Some(email.as_str()));
@@ -2166,5 +2231,97 @@ pub async fn sync_qoder_usage_from_remote(
 
     Ok(account)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_same_identity_with_valid_uids() {
+        let account = QoderAccount {
+            id: "acc_1".to_string(),
+            email: "test@example.com".to_string(),
+            user_id: Some("uid_123".to_string()),
+            display_name: None,
+            plan_type: None,
+            credits_used: None,
+            credits_total: None,
+            credits_remaining: None,
+            credits_usage_percent: None,
+            quota_query_last_error: None,
+            quota_query_last_error_at: None,
+            usage_updated_at: None,
+            tags: None,
+            auth_user_info_raw: None,
+            auth_user_plan_raw: None,
+            auth_credit_usage_raw: None,
+            created_at: 0,
+            last_used: 0,
+        };
+
+        // 相同 uid
+        assert!(same_identity(&account, Some("uid_123"), None, "other_id"));
+        // 不同 uid
+        assert!(!same_identity(&account, Some("uid_456"), None, "other_id"));
+    }
+
+    #[test]
+    fn test_same_identity_prevents_placeholder_collision() {
+        let account1 = QoderAccount {
+            id: "acc_placeholder_1".to_string(),
+            email: "user_11111111@qoder.local".to_string(),
+            user_id: None,
+            display_name: None,
+            plan_type: None,
+            credits_used: None,
+            credits_total: None,
+            credits_remaining: None,
+            credits_usage_percent: None,
+            quota_query_last_error: None,
+            quota_query_last_error_at: None,
+            usage_updated_at: None,
+            tags: None,
+            auth_user_info_raw: None,
+            auth_user_plan_raw: None,
+            auth_credit_usage_raw: None,
+            created_at: 0,
+            last_used: 0,
+        };
+
+        // 另一个也是占位邮箱的账号，绝不能判定为相同身份
+        assert!(!same_identity(
+            &account1,
+            None,
+            Some("user_22222222@qoder.local"),
+            "acc_placeholder_2"
+        ));
+        assert!(!same_identity(
+            &account1,
+            None,
+            Some("unknown@qoder.local"),
+            "acc_placeholder_3"
+        ));
+    }
+
+    #[test]
+    fn test_generate_account_id_generates_distinct_ids_without_uid() {
+        let snap1 = QoderSnapshot {
+            user_info_raw: Some(serde_json::json!({ "token": "tok_alpha" })),
+            user_plan_raw: None,
+            credit_usage_raw: None,
+        };
+        let snap2 = QoderSnapshot {
+            user_info_raw: Some(serde_json::json!({ "token": "tok_beta" })),
+            user_plan_raw: None,
+            credit_usage_raw: None,
+        };
+
+        let id1 = generate_account_id(&snap1, None, None);
+        let id2 = generate_account_id(&snap2, None, None);
+
+        assert_ne!(id1, id2, "不同凭据的账号绝不能生成相同 ID");
+    }
+}
+
 
 

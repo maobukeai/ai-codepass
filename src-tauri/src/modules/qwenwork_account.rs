@@ -411,51 +411,117 @@ pub fn inject_to_qwenwork_dir(
     Ok(())
 }
 
+fn extract_token_from_raw_value(val: &Value) -> Option<String> {
+    const CANDIDATES: &[&[&str]] = &[
+        &["token"],
+        &["securityOauthToken"],
+        &["accessToken"],
+        &["access_token"],
+        &["__qwenwork_auth_v2", "token"],
+        &["result", "token"],
+        &["data", "token"],
+        &["result", "accessToken"],
+        &["data", "accessToken"],
+        &["data", "securityOauthToken"],
+        &["user", "token"],
+    ];
+    for path in CANDIDATES {
+        let mut curr = val;
+        let mut ok = true;
+        for key in *path {
+            if let Some(next) = curr.get(*key) {
+                curr = next;
+            } else {
+                ok = false;
+                break;
+            }
+        }
+        if ok {
+            if let Some(s) = curr.as_str() {
+                let trimmed = s.trim();
+                if !trimmed.is_empty() {
+                    return Some(trimmed.to_string());
+                }
+            }
+        }
+    }
+    None
+}
+
+fn secret_matches_account(secret_val: &Value, account: &QoderAccount) -> bool {
+    let secret_uid = secret_val
+        .get("id")
+        .or_else(|| secret_val.get("uid"))
+        .or_else(|| secret_val.get("userId"))
+        .or_else(|| secret_val.get("user_id"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.trim());
+    if let (Some(s_uid), Some(a_uid)) = (secret_uid, account.user_id.as_deref().map(|s| s.trim())) {
+        if !s_uid.is_empty() && !a_uid.is_empty() {
+            return s_uid.eq_ignore_ascii_case(a_uid);
+        }
+    }
+
+    let secret_email = secret_val
+        .get("email")
+        .or_else(|| secret_val.get("mail"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.trim().to_lowercase());
+    let a_email = account.email.trim().to_lowercase();
+    if let Some(s_email) = secret_email {
+        if s_email.contains('@') && a_email.contains('@') {
+            return s_email == a_email;
+        }
+    }
+
+    if let Some(acc_tok) = account.auth_user_info_raw.as_ref().and_then(extract_token_from_raw_value) {
+        if let Some(sec_tok) = extract_token_from_raw_value(secret_val) {
+            if sec_tok == acc_tok {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 pub fn get_fresh_token_for_platform(kind: QoderPlatformKind, account: &QoderAccount) -> Option<String> {
+    // 1. If local live session belongs to this specific account, use freshest live token
     if kind == QoderPlatformKind::QwenWork {
         let data_dir = get_default_qwenwork_user_data_dir();
         if let Ok(Some(v2)) = read_auth_v2_json(&data_dir) {
-            let matches = v2.get("user")
-                .and_then(|u| u.get("id"))
-                .and_then(|v| v.as_str())
-                .map(|id| account.user_id.as_deref() == Some(id) || account.id.contains(id))
-                .unwrap_or(true);
-            if matches {
+            if secret_matches_account(&v2, account) {
                 if let Some(tok) = v2.get("token").and_then(|v| v.as_str()) {
-                    if !tok.trim().is_empty() {
-                        return Some(tok.trim().to_string());
+                    let trimmed = tok.trim();
+                    if !trimmed.is_empty() {
+                        return Some(trimmed.to_string());
+                    }
+                }
+            }
+        }
+    } else if let Some(db_path) = qoder_account::get_default_qoder_state_db_path_for_platform(kind) {
+        if db_path.exists() {
+            if let Ok(Some(secret_val)) = qoder_account::read_qoder_secret_json(&db_path, qoder_account::QODER_SECRET_USER_INFO_KEY) {
+                if secret_matches_account(&secret_val, account) {
+                    if let Some(tok) = extract_token_from_raw_value(&secret_val) {
+                        return Some(tok);
                     }
                 }
             }
         }
     }
 
-    // 1. Check local state db for freshest live token
-    if let Some(db_path) = qoder_account::get_default_qoder_state_db_path_for_platform(kind) {
-        if db_path.exists() {
-            if let Ok(Some(secret_val)) = qoder_account::read_qoder_secret_json(&db_path, qoder_account::QODER_SECRET_USER_INFO_KEY) {
-                if let Some(tok) = secret_val.get("token").and_then(|v| v.as_str()) {
-                    if !tok.trim().is_empty() {
-                        return Some(tok.trim().to_string());
-                    }
-                }
-            }
-        }
+    // 2. Always fallback to the account's own persisted token credentials
+    if let Some(tok) = account.auth_user_info_raw.as_ref().and_then(extract_token_from_raw_value) {
+        return Some(tok);
     }
-    // 2. Fall back to account snapshot
-    account
-        .auth_user_info_raw
-        .as_ref()
-        .and_then(|v| {
-            v.get("__qwenwork_auth_v2")
-                .and_then(|a| a.get("token"))
-                .or_else(|| v.get("token"))
-                .or_else(|| v.get("accessToken"))
-                .or_else(|| v.get("access_token"))
-        })
-        .and_then(|v| v.as_str())
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
+    if let Some(tok) = account.auth_user_plan_raw.as_ref().and_then(extract_token_from_raw_value) {
+        return Some(tok);
+    }
+    if let Some(tok) = account.auth_credit_usage_raw.as_ref().and_then(extract_token_from_raw_value) {
+        return Some(tok);
+    }
+
+    None
 }
 
 pub async fn claim_qwenwork_daily_checkin(account_id: &str) -> Result<Value, String> {

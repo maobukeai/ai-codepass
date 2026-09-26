@@ -935,8 +935,16 @@ fn upsert_account_record_from_payload(
     let incoming_uid = normalize_identity(payload.uid.as_deref());
     let incoming_email = normalize_email_identity(Some(payload.email.as_str()));
     let identity_seed = incoming_uid
-        .or_else(|| incoming_email)
-        .unwrap_or_else(|| "codebuddy_cn_user".to_string());
+        .or(incoming_email)
+        .or_else(|| {
+            let tok = payload.access_token.trim();
+            if !tok.is_empty() {
+                Some(tok.to_string())
+            } else {
+                None
+            }
+        })
+        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
     let generated_id = format!("codebuddy_cn_{:x}", md5::compute(identity_seed.as_bytes()));
 
     let account = CodebuddyAccount {
