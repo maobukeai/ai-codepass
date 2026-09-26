@@ -8,7 +8,27 @@ const DEFAULT_CHECK_INTERVAL_HOURS: u64 = 1;
 const LEGACY_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 24;
 const LEGACY_PREVIOUS_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 6;
 const PENDING_UPDATE_NOTES_FILE: &str = "pending_update_notes.json";
-const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.0] - 2026-09-26
+const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.1] - 2026-09-26
+
+### Highlights
+- Physical Storage Isolation: Complete migration to independent directory `~/.ai_codepass`.
+- Codebase Privacy Sanitization: Completely removed hardcoded test accounts, author personal paths, and test credentials.
+- Enhanced Qoder Auto Check-in: Improved SASH protocol compliance and client headers for stable daily credit claims.
+- Compact Size & Native Performance: Preserved ultra-light 8.5MB installer package.
+
+### Added
+- Independent storage directory `~/.ai_codepass` for clean initial installations
+- SASH client protocol enhancements for Qoder global check-in
+
+### Changed
+- Refactored user storage path to prevent legacy data leakage
+- Synchronized latest v1.0.1 release notes and changelog history
+
+### Fixed
+- Fixed legacy account residue on clean installations
+- Cleaned up obsolete configuration and debugging references
+
+## [1.0.0] - 2026-09-26
 
 ### Highlights
 - Specialized standalone management tool for CodeBuddy, Qoder, and Trae.
@@ -33,7 +53,27 @@ const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.0] - 2026-09-26
 - Fixed desktop process sync during account switching
 "#;
 
-const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.0] - 2026-09-26
+const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.1] - 2026-09-26
+
+### 重要更新
+- 专属数据目录物理隔离：全面迁移并重构本地持久化数据至独立专属目录 `~/.ai_codepass`，彻底杜绝历史账号残留，确保首次安装启动纯净空白。
+- 源码隐私与全链路脱敏：彻底清洗代码与测试用例中的所有硬编码调试账号、作者隐私信息与个人本地路径，加固安全防护。
+- Qoder 签到与配额服务优化：完善 SASH 协议与高拟真客户端请求头，支持千问办公、Qoder 国际版与国内版多账号稳定打卡。
+- 极致体积与性能保持：全程序 LTO 单态优化，Windows 安装包保持 8.5MB 极简体积，毫秒级快速启动。
+
+### 新增
+- 独立专属数据存储目录 `~/.ai_codepass`，实现物理层级隔离保护
+- 优化 Qoder 国际版与国内版签到请求头契约
+
+### 变更
+- 重构持久化存储层，新安装用户 100% 纯净空白启动
+- 健全多语言版本更新日志与更新历史记录展示
+
+### 修复
+- 彻底解决首次安装可能继承历史调试账号的残留问题
+- 修复更新记录中新版本条目未展示问题
+
+## [1.0.0] - 2026-09-26
 
 ### 重要更新
 - 独立聚焦三大主流 AI 编程助手：CodeBuddy（腾讯混元）、Qoder（阿里通义灵码）、Trae（字节跳动）。

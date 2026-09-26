@@ -85,7 +85,12 @@ $checksumContent = "$zipHash  AI-CodePass_${version}_x64_Portable.zip`r`n$msiHas
 $checksumPath = Join-Path $releaseDir "checksums.txt"
 [System.IO.File]::WriteAllText($checksumPath, $checksumContent, [System.Text.Encoding]::ASCII)
 
+Write-Host "Generating latest.json updater manifests via node..."
+node (Join-Path $scriptDir "generate_manifest.cjs") $version
+
 Write-Host "`n==== Packaging Release Successful ===="
 Write-Host "MSI:  $msiTarget ($((Get-Item $msiTarget).Length) bytes, SHA-256: $msiHash)"
 Write-Host "ZIP:  $zipTarget ($((Get-Item $zipTarget).Length) bytes, SHA-256: $zipHash)"
 Write-Host "Checksum file: $checksumPath"
+Write-Host "Updater manifest: $latestJsonPath"
+
