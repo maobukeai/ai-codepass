@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const version = process.argv[2] || '1.0.1';
+const version = process.argv[2] || '1.0.2';
 const releaseDir = path.resolve(__dirname, '..', 'release_artifacts');
 
 if (!fs.existsSync(releaseDir)) {
@@ -12,10 +12,10 @@ const pubDate = new Date().toISOString();
 const notes = [
   "### AI CodePass v" + version + " 重要更新",
   "",
-  "1. **专属数据目录物理隔离**：本地持久化数据迁移至专属目录 ~/.ai_codepass，新安装环境 100% 纯净空白。",
-  "2. **源码隐私深度脱敏**：彻底移除历史提交与工程中残留的测试账号与本地路径敏感信息。",
-  "3. **Qoder 自动打卡能力强化**：更新 SASH 协议与客户端设备请求头，提升积分领取稳定性。",
-  "4. **极致体积与启动速度**：去除冗余语言包与废弃代码，安装包与免安装包控制在 8.5MB 内，毫秒级冷启动。"
+  "1. **全平台多账号防顶替防覆盖**：彻底根除 CodeBuddy、Workbuddy、Qoder 与 Trae 在缺少邮箱或 UID 时的账号 ID 碰撞，确保扫码多账号添加 100% 独立共存。",
+  "2. **全平台签到隔离与防串号**：各平台签到任务严格使用各账号专属持久化 Token，不依赖本地客户端运行状态，杜绝误用当前运行账号凭证。",
+  "3. **自动更新多架构全目标适配**：全量补齐 Windows NSIS、MSI 与标准 target 清单，解决跨平台安装方式下更新检查报错问题。",
+  "4. **更新临时安装包自动清理**：新增自动清理机制，启动与更新后自动清理临时下载的安装包，确保电脑零残余空间占用。"
 ].join("\n");
 
 let signature = "";

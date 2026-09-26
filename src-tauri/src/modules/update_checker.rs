@@ -8,7 +8,28 @@ const DEFAULT_CHECK_INTERVAL_HOURS: u64 = 1;
 const LEGACY_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 24;
 const LEGACY_PREVIOUS_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 6;
 const PENDING_UPDATE_NOTES_FILE: &str = "pending_update_notes.json";
-const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.1] - 2026-09-26
+const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.2] - 2026-09-26
+
+### Highlights
+- Multi-Account Collision & Overwrite Eradicated: Completely fixed account identity collision in CodeBuddy, Workbuddy, Qoder, and Trae when email or UID is absent, ensuring 100% independent coexistence.
+- Account-Isolated Check-in & Token Protection: All daily check-in tasks strictly use each account's dedicated persisted credentials without relying on local IDE runtime sessions.
+- Full Windows Updater Target Coverage: Added complete manifest coverage for NSIS, MSI, and standard targets, eliminating update check errors.
+- Automatic Temp Installer Cleanup: Automatically cleans up downloaded updater packages from temporary directories to prevent disk space accumulation.
+
+### Added
+- Auto-cleaner for stale updater temporary installation packages
+- Multi-target updater manifest coverage (windows-x86_64, windows-x86_64-nsis, windows-x86_64-msi)
+
+### Changed
+- Decoupled daily check-in and quota queries from local running IDE instances
+- Improved token collision prevention with cryptographic salt fallbacks
+
+### Fixed
+- Fixed account overwrite bug where adding a new account squeezed out existing accounts
+- Fixed check-in failure for inactive/background accounts across all platforms
+- Fixed updater package accumulation in temp directories
+
+## [1.0.1] - 2026-09-26
 
 ### Highlights
 - Physical Storage Isolation: Complete migration to independent directory `~/.ai_codepass`.
@@ -53,7 +74,28 @@ const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.1] - 2026-09-26
 - Fixed desktop process sync during account switching
 "#;
 
-const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.1] - 2026-09-26
+const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.2] - 2026-09-26
+
+### 重要更新
+- 全平台多账号防顶替防覆盖：彻底根除 CodeBuddy、Workbuddy、Qoder 与 Trae 在缺少邮箱或 UID 时的账号 ID 碰撞，确保扫码多账号添加 100% 独立共存。
+- 全平台签到隔离与防串号：各平台签到任务严格使用各账号专属持久化 Token，不依赖本地客户端运行状态，杜绝误用当前运行账号凭证。
+- 自动更新多架构全目标适配：全量补齐 Windows NSIS、MSI 与标准 target 清单，解决跨平台安装方式下更新检查报错问题。
+- 更新临时安装包自动清理：新增自动清理机制，启动与更新后自动清理临时下载的安装包，确保电脑零残余空间占用。
+
+### 新增
+- 自动更新临时安装包过期清理机制（clean_stale_updater_temp_files）
+- 自动更新全架构目标清单（windows-x86_64, windows-x86_64-nsis, windows-x86_64-msi）
+
+### 变更
+- 全面解耦每日签到与本地 IDE 客户端运行进程状态
+- 优化账号唯一身份生成逻辑，采用加密哈希与 UUID 防碰撞
+
+### 修复
+- 彻底修复添加新账号时挤掉覆盖已有账号的严重缺陷
+- 彻底修复只有当前切换运行中的账号才能签到成功的串号问题
+- 修复自动更新下载安装包在临时目录中累积占用磁盘空间的问题
+
+## [1.0.1] - 2026-09-26
 
 ### 重要更新
 - 专属数据目录物理隔离：全面迁移并重构本地持久化数据至独立专属目录 `~/.ai_codepass`，彻底杜绝历史账号残留，确保首次安装启动纯净空白。

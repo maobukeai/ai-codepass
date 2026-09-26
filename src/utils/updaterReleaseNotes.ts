@@ -3,6 +3,20 @@ const EN_SECTION_HEADER = '## Changelog (English)';
 const GITHUB_RELEASE_TAG_BASE_URL =
   'https://github.com/maobukeai/ai-codepass/releases/tag/v';
 const RELEASE_HIGHLIGHTS: Record<string, { zh: string; en: string }> = {
+  '1.0.2': {
+    zh: `### 重要更新
+
+- **全平台多账号防顶替防覆盖**：彻底根除 CodeBuddy、Workbuddy、Qoder 与 Trae 在缺少邮箱或 UID 时的账号 ID 碰撞，确保扫码多账号添加 100% 独立共存。
+- **全平台签到隔离与防串号**：各平台签到任务严格使用各账号专属持久化 Token，不依赖本地客户端运行状态，杜绝误用当前运行账号凭证。
+- **自动更新多架构全目标适配**：全量补齐 Windows NSIS、MSI 与标准 target 清单，解决跨平台安装方式下更新检查报错问题。
+- **更新临时安装包自动清理**：新增自动清理机制，启动与更新后自动清理临时下载的安装包，确保电脑零残余空间占用。`,
+    en: `### Highlights
+
+- **Multi-Account Collision & Overwrite Eradicated**: Completely fixed account identity collision in CodeBuddy, Workbuddy, Qoder, and Trae when email or UID is absent, ensuring 100% independent coexistence.
+- **Account-Isolated Check-in & Token Protection**: All daily check-in tasks strictly use each account's dedicated persisted credentials without relying on local IDE runtime sessions.
+- **Full Windows Updater Target Coverage**: Added complete manifest coverage for NSIS, MSI, and standard targets, eliminating update check errors.
+- **Automatic Temp Installer Cleanup**: Automatically cleans up downloaded updater packages from temporary directories to prevent disk space accumulation.`,
+  },
   '1.0.1': {
     zh: `### 重要更新
 

@@ -65,6 +65,10 @@ describe("updater release highlights", () => {
     assert.equal(v101Chinese.length, 4);
     assert.match(v101Chinese[0], /专属数据目录物理隔离/);
 
+    const v102Chinese = getUpdaterReleaseHighlightLines("v1.0.2", "zh-CN");
+    assert.equal(v102Chinese.length, 4);
+    assert.match(v102Chinese[0], /全平台多账号防顶替防覆盖/);
+
     assert.deepEqual(
       getUpdaterReleaseHighlightLines("9.9.9", "zh-CN"),
       [],
