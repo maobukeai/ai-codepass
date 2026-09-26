@@ -3,6 +3,20 @@ const EN_SECTION_HEADER = '## Changelog (English)';
 const GITHUB_RELEASE_TAG_BASE_URL =
   'https://github.com/maobukeai/ai-codepass/releases/tag/v';
 const RELEASE_HIGHLIGHTS: Record<string, { zh: string; en: string }> = {
+  '1.0.3': {
+    zh: `### 重要更新
+
+- **Trae 签到风控彻底修复**：新增从本机真实 TinyStorage（aha.device.device_id）与日志中自动解密提取字节跳动已注册真实设备 ID，彻底解决 9074（当前参与用户太多）风控拦截。
+- **CodeBuddy 配额卡片挤压修复**：重构配额分类头部弹性布局与文本截断机制，配合全量悬浮 Tooltip 与网格呼吸间距，彻底消除文字与数值重叠挤压。
+- **自动更新平滑升级闭环**：统一专用签名密钥与全架构更新清单，支持 1.0.2 客户端一键平滑静默下载与无缝升级。
+- **构建产物与校验完整性保障**：支持便携版与安装版双格式发布，自动化生成 SHA-256 校验和与多平台 Target 索引。`,
+    en: `### Highlights
+
+- **Trae Check-in Risk Control Eradicated**: Automatically extracts and decrypts ByteDance registered real device ID from TinyStorage (aha.device.device_id) and logs, permanently fixing error 9074.
+- **CodeBuddy Quota Card Layout Squeeze Fixed**: Redesigned category card header layout with elastic ellipsis and interactive tooltips, resolving text and numeric overlap.
+- **Seamless Auto-Update Upgrade Flow**: Unified dedicated updater signing keys and multi-target manifests, allowing smooth 1.0.2 to 1.0.3 in-app upgrade.
+- **Release Verification & Multi-Distribution**: Provides both MSI installer and portable ZIP with SHA-256 checksums and comprehensive platform manifests.`,
+  },
   '1.0.2': {
     zh: `### 重要更新
 

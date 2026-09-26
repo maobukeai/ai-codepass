@@ -8,7 +8,26 @@ const DEFAULT_CHECK_INTERVAL_HOURS: u64 = 1;
 const LEGACY_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 24;
 const LEGACY_PREVIOUS_DEFAULT_CHECK_INTERVAL_HOURS: u64 = 6;
 const PENDING_UPDATE_NOTES_FILE: &str = "pending_update_notes.json";
-const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.2] - 2026-09-26
+const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.3] - 2026-09-26
+
+### Highlights
+- Trae Check-in Risk Control Resolution: Automatically extracts and decrypts genuine registered device identifiers from TinyStorage (aha.device.device_id) and running logs, eliminating ByteDance 9074 risk rejections.
+- CodeBuddy Quota Card Layout Overlap Fix: Completely solved text colliding and squeezing in quota category headers with flexible container truncation, tooltip previews, and improved grid spacing.
+- Robust Auto-Update Delivery: Synchronized official updater keypair and multi-target manifests for seamless one-click background upgrade.
+
+### Added
+- Automated TinyStorage ByteCrypto decryption helper for genuine Trae device identification
+- Interactive tooltip support for truncated resource package titles, quota figures, and expiration timestamps
+
+### Changed
+- Refactored CodeBuddy / Workbuddy quota item layout with resilient flex truncation
+- Enhanced accounts grid card minimum width to 250px for clearer typography
+
+### Fixed
+- Fixed Trae daily check-in failure caused by unregistered client device IDs (code: 9074)
+- Fixed text squeezing and overlapping between package names, badge counts, and quota statistics
+
+## [1.0.2] - 2026-09-26
 
 ### Highlights
 - Multi-Account Collision & Overwrite Eradicated: Completely fixed account identity collision in CodeBuddy, Workbuddy, Qoder, and Trae when email or UID is absent, ensuring 100% independent coexistence.
@@ -74,7 +93,26 @@ const CHANGELOG_MARKDOWN_EN: &str = r#"## [1.0.2] - 2026-09-26
 - Fixed desktop process sync during account switching
 "#;
 
-const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.2] - 2026-09-26
+const CHANGELOG_MARKDOWN_ZH: &str = r#"## [1.0.3] - 2026-09-26
+
+### 重要更新
+- Trae 签到风控彻底修复：新增从本机真实 TinyStorage（aha.device.device_id）与日志中自动解密提取字节跳动已注册真实设备 ID，彻底解决 9074（当前参与用户太多）风控拦截。
+- CodeBuddy 配额卡片挤压修复：重构配额分类头部弹性布局与文本截断机制，配合全量悬浮 Tooltip 与网格呼吸间距，彻底消除文字与数值重叠挤压。
+- 自动更新平滑升级闭环：统一专用签名密钥与全架构更新清单，支持 1.0.2 客户端一键平滑静默下载与无缝升级。
+
+### 新增
+- Trae 真实设备 ID 自动解密提取引擎（TinyStorage + ByteCrypto v1）
+- 配额分类名称、资源包数量与到期时间超长时鼠标悬停完整 Tooltip 提示
+
+### 变更
+- 重构 CodeBuddy / Workbuddy 配额卡片内部弹性排版，保障极端窄窗下的排版健壮性
+- 优化账号卡片网格最小列宽至 250px，提供更舒适的视觉呼吸感
+
+### 修复
+- 彻底修复 Trae 签到因伪造随机设备指纹触发 9074 风控拦截的缺陷
+- 彻底修复 CodeBuddy 资源包分类中名称、角标与用量数值发生重合挤压的问题
+
+## [1.0.2] - 2026-09-26
 
 ### 重要更新
 - 全平台多账号防顶替防覆盖：彻底根除 CodeBuddy、Workbuddy、Qoder 与 Trae 在缺少邮箱或 UID 时的账号 ID 碰撞，确保扫码多账号添加 100% 独立共存。
@@ -780,4 +818,23 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].version, "0.3.0");
     }
+
+    #[test]
+    fn test_verify_v103_artifact_signature() {
+        let pubkey_str = "untrusted comment: minisign public key: 3BEEEB4E6F1522C3\nRWTDIhVvTuvuO4bPz4jgUVYpreEteksdVrLurxQRwIpRqppMThaIcUzC\n";
+        let pubkey = minisign_verify::PublicKey::decode(pubkey_str).expect("valid pubkey");
+        let sig_path = std::path::PathBuf::from("../release_artifacts/AI-CodePass_1.0.3_x64_Setup.msi.sig");
+        let msi_path = std::path::PathBuf::from("../release_artifacts/AI-CodePass_1.0.3_x64_Setup.msi");
+        if sig_path.exists() && msi_path.exists() {
+            let sig_str_raw = std::fs::read_to_string(&sig_path).expect("read sig");
+            let sig_decoded = String::from_utf8(
+                base64::Engine::decode(&base64::engine::general_purpose::STANDARD, sig_str_raw.trim())
+                    .expect("base64 decode sig")
+            ).expect("utf8 sig");
+            let signature = minisign_verify::Signature::decode(&sig_decoded).expect("valid sig");
+            let bin_bytes = std::fs::read(&msi_path).expect("read bin");
+            pubkey.verify(&bin_bytes, &signature, false).expect("minisign verification succeeds");
+        }
+    }
 }
+

@@ -69,6 +69,10 @@ describe("updater release highlights", () => {
     assert.equal(v102Chinese.length, 4);
     assert.match(v102Chinese[0], /全平台多账号防顶替防覆盖/);
 
+    const v103Chinese = getUpdaterReleaseHighlightLines("v1.0.3", "zh-CN");
+    assert.equal(v103Chinese.length, 4);
+    assert.match(v103Chinese[0], /Trae 签到风控彻底修复/);
+
     assert.deepEqual(
       getUpdaterReleaseHighlightLines("9.9.9", "zh-CN"),
       [],

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const version = process.argv[2] || '1.0.2';
+const version = process.argv[2] || '1.0.3';
 const releaseDir = path.resolve(__dirname, '..', 'release_artifacts');
 
 if (!fs.existsSync(releaseDir)) {
@@ -12,10 +12,9 @@ const pubDate = new Date().toISOString();
 const notes = [
   "### AI CodePass v" + version + " 重要更新",
   "",
-  "1. **全平台多账号防顶替防覆盖**：彻底根除 CodeBuddy、Workbuddy、Qoder 与 Trae 在缺少邮箱或 UID 时的账号 ID 碰撞，确保扫码多账号添加 100% 独立共存。",
-  "2. **全平台签到隔离与防串号**：各平台签到任务严格使用各账号专属持久化 Token，不依赖本地客户端运行状态，杜绝误用当前运行账号凭证。",
-  "3. **自动更新多架构全目标适配**：全量补齐 Windows NSIS、MSI 与标准 target 清单，解决跨平台安装方式下更新检查报错问题。",
-  "4. **更新临时安装包自动清理**：新增自动清理机制，启动与更新后自动清理临时下载的安装包，确保电脑零残余空间占用。"
+  "1. **Trae 签到风控彻底修复**：新增从本机真实 TinyStorage（aha.device.device_id）与日志中自动解密提取字节跳动已注册真实设备 ID，彻底解决 9074（当前参与用户太多）风控拦截。",
+  "2. **CodeBuddy 配额卡片挤压修复**：重构配额分类头部弹性布局与文本截断机制，配合全量悬浮 Tooltip 与网格呼吸间距，彻底消除文字与数值重叠挤压。",
+  "3. **自动更新平滑升级闭环**：统一专用签名密钥与全架构更新清单，支持 1.0.2 客户端一键平滑静默下载与无缝升级。"
 ].join("\n");
 
 let signature = "";

@@ -13,6 +13,9 @@ if (-not $SkipBuild) {
         Write-Host "Loading updater signing key from $keyPath..."
         $keyContent = Get-Content -Path $keyPath -Raw
         $env:TAURI_SIGNING_PRIVATE_KEY = $keyContent.Trim()
+        $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "aicodepass2026"
+        $env:TAURI_PRIVATE_KEY = $keyContent.Trim()
+        $env:TAURI_PRIVATE_KEY_PASSWORD = "aicodepass2026"
     } else {
         Write-Warning "updater_key not found at $keyPath. Building without updater private key."
     }
